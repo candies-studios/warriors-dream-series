@@ -2,776 +2,95 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Fighter Rankings - Warriors Dream Series</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rankings - Warriors Dream Series</title>
   <style>
-    :root {
-      --bg-primary: #ffffff;
-      --bg-secondary: #f8f8f8;
-      --text-primary: #1a1a1a;
-      --text-secondary: #666666;
-      --text-tertiary: #999999;
-      --border-color: #e5e5e5;
-      --accent-up: #10b981;
-      --accent-down: #ef4444;
-      --accent-neutral: #3b82f6;
-      --wds-red: #d63031;
-      --wds-dark: #0f0f0f;
-      --gold: #fbbf24;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) {
-        --bg-primary: #0f0f0f;
-        --bg-secondary: #1a1a1a;
-        --text-primary: #ffffff;
-        --text-secondary: #d1d5db;
-        --text-tertiary: #9ca3af;
-        --border-color: #2d2d2d;
-        --wds-dark: #000000;
-      }
-    }
-
-    :root[data-theme="dark"] {
-      --bg-primary: #0f0f0f;
-      --bg-secondary: #1a1a1a;
-      --text-primary: #ffffff;
-      --text-secondary: #d1d5db;
-      --text-tertiary: #9ca3af;
-      --border-color: #2d2d2d;
-      --wds-dark: #000000;
-      color-scheme: dark;
-    }
-
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
 
-    html, body {
-      height: 100%;
-    }
-
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      line-height: 1.6;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
     }
 
-    .container {
-      max-width: 1400px;
+    /* Navigation */
+    nav {
+      background: #1a1a1a;
+      padding: 15px 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    nav ul {
+      list-style: none;
+      max-width: 1200px;
       margin: 0 auto;
-      padding: 0 24px;
-    }
-
-    /* Header */
-    .header {
-      background: linear-gradient(135deg, var(--wds-dark) 0%, #1a1a1a 100%);
-      color: white;
-      padding: 24px 0;
-      border-bottom: 3px solid var(--wds-red);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    .header-inner {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 0 24px;
+      gap: 30px;
     }
 
-    .logo {
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: -1px;
-      font-family: 'Playfair Display', serif;
-    }
-
-    .logo span {
-      color: var(--wds-red);
-    }
-
-    .updated {
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.7);
+    nav a {
+      color: white;
+      text-decoration: none;
       font-weight: 500;
+      transition: color 0.3s;
     }
 
-    /* Hero Section */
-    .hero {
-      padding: 60px 0;
-      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
-      position: relative;
-      overflow: hidden;
+    nav a:hover {
+      color: #d63031;
     }
 
-    .hero-content {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 60px;
-      align-items: center;
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 0 24px;
-    }
-
-    .hero-text h1 {
-      font-size: 56px;
-      font-weight: 800;
-      margin-bottom: 16px;
-      font-family: 'Playfair Display', serif;
-      line-height: 1.1;
-      background: linear-gradient(135deg, var(--text-primary) 0%, var(--wds-red) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .hero-text p {
-      font-size: 18px;
-      color: var(--text-secondary);
-      margin-bottom: 24px;
-      line-height: 1.6;
-      font-weight: 500;
-    }
-
-    .hero-image {
-      position: relative;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 20px 60px rgba(214, 48, 49, 0.2);
-    }
-
-    .hero-image img {
+    /* Rankings Container */
+    .rankings-container {
       width: 100%;
-      height: auto;
-      display: block;
-      object-fit: cover;
-    }
-
-    .hero-badge {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background: var(--wds-red);
-      color: white;
-      padding: 12px 24px;
-      border-radius: 50px;
-      font-weight: 700;
-      font-size: 14px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      box-shadow: 0 8px 24px rgba(214, 48, 49, 0.3);
-    }
-
-    /* Info Box */
-    .info-box {
-      background: var(--bg-secondary);
-      padding: 20px 24px;
-      border-left: 4px solid var(--wds-red);
-      margin: 40px auto;
-      border-radius: 8px;
-      max-width: 1400px;
-      font-size: 14px;
-      color: var(--text-secondary);
-    }
-
-    .info-box strong {
-      color: var(--wds-red);
-      font-weight: 600;
-    }
-
-    /* Selector Section */
-    .selector-section {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      justify-content: center;
-      padding: 40px 0;
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-
-    .btn-selector {
-      padding: 12px 28px;
-      border: 2px solid var(--border-color);
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      cursor: pointer;
-      border-radius: 50px;
-      font-weight: 600;
-      font-size: 14px;
-      transition: all 0.3s ease;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      font-family: 'Inter', sans-serif;
-    }
-
-    .btn-selector:hover {
-      border-color: var(--wds-red);
-      color: var(--wds-red);
-      box-shadow: 0 4px 12px rgba(214, 48, 49, 0.15);
-    }
-
-    .btn-selector.active {
-      background: var(--wds-red);
-      color: white;
-      border-color: var(--wds-red);
-      box-shadow: 0 8px 24px rgba(214, 48, 49, 0.3);
-    }
-
-    /* Division Card */
-    .division-card {
-      margin-bottom: 80px;
-      display: none;
-      max-width: 1400px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    .division-card.active {
-      display: block;
-    }
-
-    .division-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 40px;
-      padding-bottom: 24px;
-      border-bottom: 2px solid var(--border-color);
-    }
-
-    .division-title {
-      font-size: 40px;
-      font-weight: 800;
-      font-family: 'Playfair Display', serif;
-    }
-
-    .division-subtitle {
-      font-size: 16px;
-      color: var(--text-secondary);
-      margin-left: 20px;
-      font-weight: 500;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-
-    /* Champion Section */
-    .champion-section {
-      background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(214, 48, 49, 0.05) 100%);
-      padding: 32px;
-      border-radius: 12px;
-      margin-bottom: 40px;
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 32px;
-      align-items: center;
-      border: 2px solid rgba(214, 48, 49, 0.1);
-    }
-
-    .champion-badge {
-      width: 100px;
-      height: 100px;
-      background: linear-gradient(135deg, var(--wds-red), #ff6b6b);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      color: white;
-      font-size: 13px;
-      text-align: center;
-      padding: 12px;
-      box-shadow: 0 8px 24px rgba(214, 48, 49, 0.3);
-      font-family: 'Inter', sans-serif;
-    }
-
-    .champion-info h3 {
-      font-size: 32px;
-      font-weight: 800;
-      margin-bottom: 12px;
-      font-family: 'Playfair Display', serif;
-    }
-
-    .champion-info p {
-      font-size: 14px;
-      color: var(--text-secondary);
-      font-weight: 500;
-    }
-
-    /* Ranking Table */
-    .rankings-table {
-      width: 100%;
-      border-collapse: collapse;
-      background: var(--bg-primary);
-      border-radius: 12px;
+      height: calc(100vh - 60px);
       overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     }
 
-    .rankings-table thead {
-      background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(214, 48, 49, 0.05) 100%);
+    .rankings-container iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
     }
 
-    .rankings-table th {
-      padding: 16px 20px;
-      text-align: left;
-      font-weight: 700;
-      font-size: 12px;
-      text-transform: uppercase;
-      color: var(--text-secondary);
-      letter-spacing: 1px;
-      border-bottom: 2px solid var(--border-color);
-    }
-
-    .rankings-table td {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border-color);
-      font-size: 14px;
-    }
-
-    .rankings-table tbody tr:hover {
-      background: var(--bg-secondary);
-      transition: all 0.2s ease;
-    }
-
-    .rankings-table tbody tr:last-child td {
-      border-bottom: none;
-    }
-
-    .rank-number {
-      font-weight: 800;
-      font-size: 18px;
-      width: 50px;
+    /* Footer */
+    footer {
+      background: #1a1a1a;
+      color: white;
+      padding: 30px;
       text-align: center;
-      color: var(--wds-red);
-      font-family: 'Playfair Display', serif;
+      margin-top: 50px;
     }
 
-    .fighter-name {
-      font-weight: 700;
-      font-size: 15px;
-      color: var(--text-primary);
-    }
-
-    .fighter-record {
-      font-size: 12px;
-      color: var(--text-tertiary);
-      margin-top: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .elo-rating {
-      font-weight: 700;
-      font-size: 16px;
-      text-align: center;
-    }
-
-    .elo-high {
-      color: var(--accent-up);
-      background: rgba(16, 185, 129, 0.08);
-      padding: 4px 12px;
-      border-radius: 6px;
-      display: inline-block;
-    }
-
-    .elo-medium {
-      color: var(--accent-neutral);
-      background: rgba(59, 130, 246, 0.08);
-      padding: 4px 12px;
-      border-radius: 6px;
-      display: inline-block;
-    }
-
-    .elo-low {
-      color: var(--text-secondary);
-      background: rgba(0, 0, 0, 0.04);
-      padding: 4px 12px;
-      border-radius: 6px;
-      display: inline-block;
-    }
-
-    @media (max-width: 1024px) {
-      .hero-content {
-        grid-template-columns: 1fr;
-        gap: 40px;
-      }
-
-      .hero-text h1 {
-        font-size: 40px;
-      }
-
-      .division-title {
-        font-size: 32px;
-      }
-
-      .champion-section {
-        grid-template-columns: 1fr;
-        gap: 20px;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .header-inner {
-        padding: 0 16px;
-      }
-
-      .logo {
-        font-size: 22px;
-      }
-
-      .updated {
-        display: none;
-      }
-
-      .container {
-        padding: 0 16px;
-      }
-
-      .hero {
-        padding: 40px 0;
-      }
-
-      .hero-content {
-        padding: 0 16px;
-      }
-
-      .hero-text h1 {
-        font-size: 32px;
-      }
-
-      .hero-text p {
-        font-size: 16px;
-      }
-
-      .division-title {
-        font-size: 24px;
-      }
-
-      .division-subtitle {
-        font-size: 13px;
-        margin-left: 12px;
-      }
-
-      .champion-info h3 {
-        font-size: 24px;
-      }
-
-      .rankings-table th,
-      .rankings-table td {
-        padding: 12px 16px;
-        font-size: 13px;
-      }
-
-      .rank-number {
-        font-size: 16px;
-        width: 40px;
-      }
-
-      .elo-rating {
-        font-size: 14px;
-      }
-
-      .btn-selector {
-        padding: 10px 20px;
-        font-size: 12px;
-      }
-
-      .selector-section {
-        padding: 30px 16px;
-      }
+    footer p {
+      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="header-inner">
-      <div class="logo">Warriors <span>Dream</span></div>
-      <div class="updated">Rankings • Sep 28, 2026</div>
-    </div>
+  <!-- Navigation -->
+  <nav>
+    <ul>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="events.html">Events</a></li>
+      <li><a href="rankings.html">Rankings</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="contact.html">Contact</a></li>
+      <li><a href="media-room.html">Media Room</a></li>
+    </ul>
+  </nav>
+
+  <!-- Rankings Embed -->
+  <div class="rankings-container">
+    <iframe src="rankings-data.html"></iframe>
   </div>
 
-  <div class="hero">
-    <div class="hero-content">
-      <div class="hero-text">
-        <h1>Championship Rankings</h1>
-        <p>Elite fighters ranked by skill and performance using the professional ELO rating system. Track the best combat athletes across all divisions in Warriors Dream Series.</p>
-      </div>
-      <div class="hero-image">
-        <img src="https://candies-studios.github.io/warriors-dream-series/assets/images/rankings-hero.jpg" alt="Warriors Dream Series Fighter Victory">
-        <div class="hero-badge">ELO RANKED</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="container">
-    <div class="info-box">
-      <strong>📊 ELO Rating System:</strong> Rankings calculated using professional ELO algorithm. Beating higher-rated fighters gains more points. Losses to top contenders cost less rating.
-    </div>
-
-    <section class="selector-section" id="selectorSection">
-      <!-- Division buttons will be inserted here by JavaScript -->
-    </section>
-
-    <!-- Division Cards -->
-    <div id="divisionsContainer" style="padding: 0 24px;">
-      <!-- Division cards will be inserted here by JavaScript -->
-    </div>
-  </div>
-
-  <script>
-    // Raw fight data from WDS events
-    const fights = [
-      { fighter1: 'Jeko Laishram', fighter2: 'Opponent1', winner: 'Jeko Laishram', division: 'flyweight' },
-      { fighter1: 'Gaganpal Singh Dua', fighter2: 'Opponent2', winner: 'Gaganpal Singh Dua', division: 'bantamweight' },
-      { fighter1: 'Bishal Sahu', fighter2: 'Opponent3', winner: 'Bishal Sahu', division: 'flyweight' },
-      { fighter1: 'Shoaib Khan', fighter2: 'Opponent4', winner: 'Shoaib Khan', division: 'lightweight' },
-      { fighter1: 'Mansur Yakhyaev', fighter2: 'Opponent5', winner: 'Mansur Yakhyaev', division: 'welterweight' },
-      { fighter1: 'Sharip Omarov', fighter2: 'Opponent6', winner: 'Sharip Omarov', division: 'bantamweight' },
-      { fighter1: 'Shreenath Barale', fighter2: 'OpponentRS7-1', winner: 'Shreenath Barale', division: 'lightweight' },
-      { fighter1: 'Shrishti Dethe', fighter2: 'OpponentRS7-2', winner: 'Shrishti Dethe', division: 'featherweight' },
-      { fighter1: 'Bhuvan R', fighter2: 'OpponentRS7-3', winner: 'Bhuvan R', division: 'flyweight' },
-      { fighter1: 'Ashish Maurya', fighter2: 'OpponentRS7-4', winner: 'Ashish Maurya', division: 'welterweight' },
-      { fighter1: 'Ben Holdsworth', fighter2: 'Kimson Tony', winner: 'Ben Holdsworth', division: 'welterweight' },
-      { fighter1: 'Ashok Bagde', fighter2: 'Rohit Raina', winner: 'Ashok Bagde', division: 'bantamweight' },
-      { fighter1: 'Muhiddinov Oyatullo', fighter2: 'Kesavan M', winner: 'Muhiddinov Oyatullo', division: 'featherweight' },
-      { fighter1: 'A Shabarish', fighter2: 'Thiaumuanlal Guite', winner: 'A Shabarish', division: 'flyweight' },
-      { fighter1: 'Raj Singh Baghel', fighter2: 'Rajkumar R', winner: 'Raj Singh Baghel', division: 'featherweight' },
-      { fighter1: 'Sangramsingh Godse', fighter2: 'Sagar Dange', winner: 'Sangramsingh Godse', division: 'flyweight' },
-      { fighter1: 'Varun Sanyal', fighter2: 'Karan Chauhan', winner: 'Varun Sanyal', division: 'lightweight' },
-      { fighter1: 'Nikhil Thapa', fighter2: 'Chhimey Nurbu Bodh', winner: 'Nikhil Thapa', division: 'flyweight' },
-      { fighter1: 'Suryansh Pathak', fighter2: 'Nikhil Prajapati', winner: 'Suryansh Pathak', division: 'flyweight' },
-      { fighter1: 'Syed Imad Uddin', fighter2: 'Gurjeet Chahal', winner: 'Syed Imad Uddin', division: 'lightheavyweight' },
-      { fighter1: 'Andrey Chelbaev', fighter2: 'Ashok Bagade', winner: 'Ashok Bagade', division: 'bantamweight' },
-      { fighter1: 'Rishabh Patel', fighter2: 'Gurtej Singh', winner: 'Gurtej Singh', division: 'lightweight' },
-      { fighter1: 'Amit Amauriya', fighter2: 'Harsh Pandya', winner: 'Harsh Pandya', division: 'flyweight' },
-      { fighter1: 'Karandeep Singh', fighter2: 'Karan Jadhav', winner: 'Karan Jadhav', division: 'bantamweight' },
-      { fighter1: 'Rehan Rizvi', fighter2: 'Anubhav Kashyap', winner: 'Anubhav Kashyap', division: 'flyweight' },
-      { fighter1: 'Amit Cheeda', fighter2: 'M V Sarath Raj', winner: 'Amit Cheeda', division: 'welterweight' },
-      { fighter1: 'Mohit Dagar', fighter2: 'Qaazim Sheikh', winner: 'Mohit Dagar', division: 'bantamweight' },
-      { fighter1: 'Mahesh', fighter2: 'Vijay Yadav', winner: 'Mahesh', division: 'flyweight' },
-      { fighter1: 'Santosh Yadav', fighter2: 'Mano Satya Sai', winner: 'Santosh Yadav', division: 'flyweight' },
-      { fighter1: 'Pruthvi Gulla', fighter2: 'Bhim Singh', winner: 'Pruthvi Gulla', division: 'featherweight' },
-      { fighter1: 'Vikas Sehrawat', fighter2: 'Aman Shaikh', winner: 'Vikas Sehrawat', division: 'featherweight' },
-      { fighter1: 'Marshal Khimta', fighter2: 'Anosh', winner: 'Marshal Khimta', division: 'flyweight' },
-      { fighter1: 'Manav G V S', fighter2: 'Vishal Magar', winner: 'Manav G V S', division: 'bantamweight' },
-      { fighter1: 'Duke', fighter2: 'Nitish Kumar', winner: 'Duke', division: 'bantamweight' }
-    ];
-
-    const divisions = {
-      'all': { name: 'All Divisions', subtitle: 'Combined Fighters', champion: null, fighters: [] },
-      'flyweight': { name: 'Flyweight', subtitle: '56.7 kg', champion: null, fighters: [] },
-      'bantamweight': { name: 'Bantamweight', subtitle: '61.2 kg', champion: null, fighters: [] },
-      'featherweight': { name: 'Featherweight', subtitle: '65.8 kg', champion: null, fighters: [] },
-      'lightweight': { name: 'Lightweight', subtitle: '70.3 kg', champion: null, fighters: [] },
-      'welterweight': { name: 'Welterweight', subtitle: '77.1 kg', champion: null, fighters: [] },
-      'lightheavyweight': { name: 'Light Heavyweight', subtitle: '93 kg', champion: null, fighters: [] }
-    };
-
-    class ELOSystem {
-      constructor(k = 32, initialRating = 1500) {
-        this.K = k;
-        this.initialRating = initialRating;
-        this.ratings = {};
-      }
-
-      getOrCreateRating(fighter) {
-        if (!this.ratings[fighter]) {
-          this.ratings[fighter] = this.initialRating;
-        }
-        return this.ratings[fighter];
-      }
-
-      calculateExpectedScore(ratingA, ratingB) {
-        return 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
-      }
-
-      updateRating(fighter, opponentRating, actualScore) {
-        const currentRating = this.getOrCreateRating(fighter);
-        const expectedScore = this.calculateExpectedScore(currentRating, opponentRating);
-        const newRating = currentRating + this.K * (actualScore - expectedScore);
-        this.ratings[fighter] = Math.round(newRating);
-        return this.ratings[fighter];
-      }
-
-      processMatch(fighter1, fighter2, winner) {
-        const rating1 = this.getOrCreateRating(fighter1);
-        const rating2 = this.getOrCreateRating(fighter2);
-
-        if (winner === fighter1) {
-          this.updateRating(fighter1, rating2, 1);
-          this.updateRating(fighter2, rating1, 0);
-        } else {
-          this.updateRating(fighter1, rating2, 0);
-          this.updateRating(fighter2, rating1, 1);
-        }
-      }
-    }
-
-    const elo = new ELOSystem(32, 1500);
-    fights.forEach(fight => {
-      elo.processMatch(fight.fighter1, fight.fighter2, fight.winner);
-    });
-
-    const fighterStats = {};
-    fights.forEach(fight => {
-      if (!fighterStats[fight.fighter1]) {
-        fighterStats[fight.fighter1] = {
-          name: fight.fighter1,
-          division: fight.division,
-          wins: 0,
-          losses: 0,
-          elo: elo.ratings[fight.fighter1]
-        };
-      }
-      if (!fighterStats[fight.fighter2]) {
-        fighterStats[fight.fighter2] = {
-          name: fight.fighter2,
-          division: fight.division,
-          wins: 0,
-          losses: 0,
-          elo: elo.ratings[fight.fighter2]
-        };
-      }
-
-      if (fight.winner === fight.fighter1) {
-        fighterStats[fight.fighter1].wins++;
-        fighterStats[fight.fighter2].losses++;
-      } else {
-        fighterStats[fight.fighter2].wins++;
-        fighterStats[fight.fighter1].losses++;
-      }
-    });
-
-    Object.keys(fighterStats).forEach(fighterName => {
-      const fighter = fighterStats[fighterName];
-      fighter.record = `${fighter.wins}-${fighter.losses}`;
-
-      const divisionKey = fighter.division;
-      if (divisions[divisionKey]) {
-        divisions[divisionKey].fighters.push(fighter);
-      }
-    });
-
-    Object.keys(divisions).forEach(key => {
-      if (divisions[key].fighters) {
-        divisions[key].fighters.sort((a, b) => b.elo - a.elo);
-      }
-    });
-
-    divisions.all.fighters = Object.keys(divisions)
-      .filter(key => key !== 'all')
-      .reduce((acc, key) => {
-        return acc.concat(divisions[key].fighters);
-      }, [])
-      .sort((a, b) => b.elo - a.elo);
-
-    Object.keys(divisions).forEach(key => {
-      if (key !== 'all' && divisions[key].fighters.length > 0) {
-        divisions[key].champion = divisions[key].fighters[0].name;
-      }
-    });
-
-    function getRatingClass(elo) {
-      if (elo >= 1700) return 'elo-high';
-      if (elo >= 1550) return 'elo-medium';
-      return 'elo-low';
-    }
-
-    function createRankingTable(division) {
-      let table = '<table class="rankings-table"><thead><tr><th style="width: 50px">Rank</th><th>Fighter</th><th style="width: 100px">Record</th><th style="width: 120px">ELO Rating</th></tr></thead><tbody>';
-
-      division.fighters.forEach((fighter, index) => {
-        const ratingClass = getRatingClass(fighter.elo);
-        table += `<tr>
-          <td class="rank-number">${index + 1}</td>
-          <td>
-            <div class="fighter-name">${fighter.name}</div>
-            <div class="fighter-record">${fighter.division}</div>
-          </td>
-          <td>${fighter.record}</td>
-          <td class="elo-rating ${ratingClass}">${fighter.elo}</td>
-        </tr>`;
-      });
-
-      table += '</tbody></table>';
-      return table;
-    }
-
-    function createDivisionButtons() {
-      const selectorSection = document.getElementById('selectorSection');
-      const divisionKeys = Object.keys(divisions);
-
-      divisionKeys.forEach((key, index) => {
-        const btn = document.createElement('button');
-        btn.className = `btn-selector ${index === 0 ? 'active' : ''}`;
-        btn.textContent = divisions[key].name;
-        btn.onclick = () => switchDivision(key, btn);
-        selectorSection.appendChild(btn);
-      });
-    }
-
-    function createDivisionCards() {
-      const container = document.getElementById('divisionsContainer');
-      const divisionKeys = Object.keys(divisions);
-
-      divisionKeys.forEach((key, index) => {
-        const division = divisions[key];
-        const card = document.createElement('section');
-        card.className = `division-card ${index === 0 ? 'active' : ''}`;
-        card.setAttribute('data-division', key);
-
-        let championSection = '';
-        if (division.champion) {
-          const championElo = division.fighters[0].elo;
-          const championClass = getRatingClass(championElo);
-          championSection = `
-            <div class="champion-section">
-              <div class="champion-badge">CHAMPION</div>
-              <div class="champion-info">
-                <h3>${division.champion}</h3>
-                <p><span class="elo-rating ${championClass}">${championElo}</span></p>
-              </div>
-            </div>
-          `;
-        }
-
-        card.innerHTML = `
-          <div class="division-header">
-            <h2 class="division-title">${division.name}</h2>
-            <p class="division-subtitle">${division.subtitle}</p>
-          </div>
-          ${championSection}
-          ${createRankingTable(division)}
-        `;
-
-        container.appendChild(card);
-      });
-    }
-
-    function switchDivision(divisionKey, buttonEl) {
-      document.querySelectorAll('.btn-selector').forEach(btn => btn.classList.remove('active'));
-      buttonEl.classList.add('active');
-
-      document.querySelectorAll('.division-card').forEach(card => card.classList.remove('active'));
-      document.querySelector(`[data-division="${divisionKey}"]`).classList.add('active');
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      createDivisionButtons();
-      createDivisionCards();
-    });
-  </script>
+  <!-- Footer -->
+  <footer>
+    <p>&copy; 2026 Warriors Dream Series. All rights reserved.</p>
+    <p>Professional Combat Sports</p>
+  </footer>
 </body>
 </html>
