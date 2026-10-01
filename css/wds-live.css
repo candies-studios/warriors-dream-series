@@ -1,0 +1,114 @@
+/* WDS live content — styles for elements that the database adds to pages.
+   Uses the site's own palette and type (see css/style.css). */
+
+/* "View Fight Card" on the Home page's white Upcoming card */
+.wds-card-link {
+  display: inline-block;
+  margin-top: 34px;
+  padding: 14px 40px;
+  background: var(--red, #d7272a);
+  color: #fff;
+  font-family: 'Oswald', sans-serif;
+  font-size: .85rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  transition: background .25s ease;
+}
+.wds-card-link:hover { background: var(--red-dark, #a8181b); color: #fff; }
+
+a.eu-cta:hover { background: var(--red, #d7272a); color: #fff; }
+
+/* Event page: fight card */
+.wds-card-list {
+  display: grid;
+  gap: 22px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+.wds-bout {
+  background: #0b0b0b;
+  border: 1px solid #1c1c1c;
+  padding: 22px 26px 24px;
+  transition: border-color .25s ease;
+}
+.wds-bout:hover { border-color: #2c2c2c; }
+.wds-bout.is-live { border-color: var(--red, #d7272a); }
+.wds-bout-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.wds-bout-state {
+  color: #9d9d9d;
+  font-family: 'Teko', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.wds-bout.is-live .wds-bout-state,
+.wds-bout.is-final .wds-bout-state { color: var(--red, #d7272a); }
+.wds-bout-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+}
+.wds-corner { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.wds-red { text-align: right; align-items: flex-end; }
+.wds-corner-label {
+  color: #6f6f6f;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.wds-blue .wds-corner-label { color: #5b8def; }
+.wds-red .wds-corner-label { color: var(--red, #d7272a); }
+.wds-name {
+  color: #fff;
+  font-family: 'Teko', sans-serif;
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.wds-nick { color: #9d9d9d; font-size: .85rem; }
+.wds-corner.is-loser .wds-name { color: #7a7a7a; }
+.wds-vs {
+  color: #4a4a4a;
+  font-family: 'Teko', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.wds-result {
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid #1c1c1c;
+  color: #fff;
+  font-family: 'Teko', sans-serif;
+  font-size: 1.35rem;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+}
+.wds-result span { color: #9d9d9d; }
+.wds-empty {
+  color: #bdbdbd;
+  text-align: center;
+  font-size: 1rem;
+}
+
+@media (max-width: 600px) {
+  .wds-bout { padding: 18px 16px 20px; }
+  .wds-bout-head { flex-direction: column; align-items: flex-start; }
+  .wds-bout-body { grid-template-columns: 1fr; gap: 10px; }
+  .wds-red { text-align: left; align-items: flex-start; }
+  .wds-vs { font-size: 1.1rem; }
+}

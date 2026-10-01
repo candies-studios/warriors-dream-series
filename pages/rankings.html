@@ -378,6 +378,9 @@
 </footer>
 
 <script src="../js/main.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+<script src="../js/wds-config.js"></script>
+<script src="../js/wds-data.js"></script>
   <script>
     const fights = [
       { fighter1: 'Jeko Laishram', fighter2: 'Opponent1', winner: 'Jeko Laishram', division: 'flyweight' },
@@ -416,15 +419,25 @@
       { fighter1: 'Duke', fighter2: 'Nitish Kumar', winner: 'Duke', division: 'bantamweight' }
     ];
 
-    const divisions = {
-      'all': { name: 'All Divisions', subtitle: 'Combined Fighters', champion: null, fighters: [] },
-      'flyweight': { name: 'Flyweight', subtitle: '56.7 kg', champion: null, fighters: [] },
-      'bantamweight': { name: 'Bantamweight', subtitle: '61.2 kg', champion: null, fighters: [] },
-      'featherweight': { name: 'Featherweight', subtitle: '65.8 kg', champion: null, fighters: [] },
-      'lightweight': { name: 'Lightweight', subtitle: '70.3 kg', champion: null, fighters: [] },
-      'welterweight': { name: 'Welterweight', subtitle: '77.1 kg', champion: null, fighters: [] },
-      'lightheavyweight': { name: 'Light Heavyweight', subtitle: '93 kg', champion: null, fighters: [] }
+    // Division names / weights shown on the page (new divisions from the database are added automatically).
+    const DIVISION_META = {
+      'flyweight': { name: 'Flyweight', subtitle: '56.7 kg' },
+      'bantamweight': { name: 'Bantamweight', subtitle: '61.2 kg' },
+      'featherweight': { name: 'Featherweight', subtitle: '65.8 kg' },
+      'lightweight': { name: 'Lightweight', subtitle: '70.3 kg' },
+      'welterweight': { name: 'Welterweight', subtitle: '77.1 kg' },
+      'lightheavyweight': { name: 'Light Heavyweight', subtitle: '93 kg' }
     };
+
+    function emptyDivisions() {
+      const d = { 'all': { name: 'All Divisions', subtitle: 'Combined Fighters', champion: null, fighters: [] } };
+      Object.keys(DIVISION_META).forEach(key => {
+        d[key] = { name: DIVISION_META[key].name, subtitle: DIVISION_META[key].subtitle, champion: null, fighters: [] };
+      });
+      return d;
+    }
+
+    let divisions = emptyDivisions();
 
     class ELOSystem {
       constructor(k = 32, initialRating = 1500) {
@@ -466,67 +479,81 @@
       }
     }
 
-    const elo = new ELOSystem(32, 1500);
-    fights.forEach(fight => {
-      elo.processMatch(fight.fighter1, fight.fighter2, fight.winner);
-    });
+    // Offline fallback: the original in-page calculation from the list above.
+    function divisionsFromFights() {
+      const d = emptyDivisions();
+      const elo = new ELOSystem(32, 1500);
+      fights.forEach(fight => {
+        elo.processMatch(fight.fighter1, fight.fighter2, fight.winner);
+      });
 
-    const fighterStats = {};
-    fights.forEach(fight => {
-      if (!fighterStats[fight.fighter1]) {
-        fighterStats[fight.fighter1] = {
-          name: fight.fighter1,
-          division: fight.division,
-          wins: 0,
-          losses: 0,
-          elo: elo.ratings[fight.fighter1]
-        };
-      }
-      if (!fighterStats[fight.fighter2]) {
-        fighterStats[fight.fighter2] = {
-          name: fight.fighter2,
-          division: fight.division,
-          wins: 0,
-          losses: 0,
-          elo: elo.ratings[fight.fighter2]
-        };
-      }
+      const fighterStats = {};
+      fights.forEach(fight => {
+        if (!fighterStats[fight.fighter1]) {
+          fighterStats[fight.fighter1] = { name: fight.fighter1, division: fight.division, wins: 0, losses: 0, elo: elo.ratings[fight.fighter1] };
+        }
+        if (!fighterStats[fight.fighter2]) {
+          fighterStats[fight.fighter2] = { name: fight.fighter2, division: fight.division, wins: 0, losses: 0, elo: elo.ratings[fight.fighter2] };
+        }
+        if (fight.winner === fight.fighter1) {
+          fighterStats[fight.fighter1].wins++;
+          fighterStats[fight.fighter2].losses++;
+        } else {
+          fighterStats[fight.fighter2].wins++;
+          fighterStats[fight.fighter1].losses++;
+        }
+      });
 
-      if (fight.winner === fight.fighter1) {
-        fighterStats[fight.fighter1].wins++;
-        fighterStats[fight.fighter2].losses++;
-      } else {
-        fighterStats[fight.fighter2].wins++;
-        fighterStats[fight.fighter1].losses++;
-      }
-    });
+      Object.keys(fighterStats).forEach(fighterName => {
+        const fighter = fighterStats[fighterName];
+        fighter.record = `${fighter.wins}-${fighter.losses}`;
+        if (d[fighter.division]) {
+          d[fighter.division].fighters.push(fighter);
+        }
+      });
 
-    Object.keys(fighterStats).forEach(fighterName => {
-      const fighter = fighterStats[fighterName];
-      fighter.record = `${fighter.wins}-${fighter.losses}`;
+      Object.keys(d).forEach(key => {
+        d[key].fighters.sort((a, b) => b.elo - a.elo);
+      });
+      return d;
+    }
 
-      const divisionKey = fighter.division;
-      if (divisions[divisionKey]) {
-        divisions[divisionKey].fighters.push(fighter);
-      }
-    });
+    // Live: rankings computed in the WDS database from FINALIZED results only.
+    function divisionsFromDatabase(rows) {
+      const d = emptyDivisions();
+      rows.forEach(r => {
+        if (!d[r.division_key]) {
+          d[r.division_key] = { name: r.division_name, subtitle: '', champion: null, fighters: [] };
+        }
+        d[r.division_key].fighters.push({
+          name: r.name,
+          division: r.division_key,
+          wins: r.wins,
+          losses: r.losses,
+          elo: r.elo,
+          rank: r.division_rank,
+          record: r.draws ? `${r.wins}-${r.losses}-${r.draws}` : `${r.wins}-${r.losses}`
+        });
+      });
+      Object.keys(d).forEach(key => {
+        d[key].fighters.sort((a, b) => a.rank - b.rank);
+      });
+      return d;
+    }
 
-    Object.keys(divisions).forEach(key => {
-      if (divisions[key].fighters) {
-        divisions[key].fighters.sort((a, b) => b.elo - a.elo);
-      }
-    });
+    function finishDivisions(d) {
+      d.all.fighters = Object.keys(d)
+        .filter(key => key !== 'all')
+        .reduce((acc, key) => acc.concat(d[key].fighters), [])
+        .sort((a, b) => b.elo - a.elo);
 
-    divisions.all.fighters = Object.keys(divisions)
-      .filter(key => key !== 'all')
-      .reduce((acc, key) => acc.concat(divisions[key].fighters), [])
-      .sort((a, b) => b.elo - a.elo);
-
-    Object.keys(divisions).forEach(key => {
-      if (key !== 'all' && divisions[key].fighters.length > 0) {
-        divisions[key].champion = divisions[key].fighters[0].name;
-      }
-    });
+      Object.keys(d).forEach(key => {
+        if (key !== 'all' && d[key].fighters.length > 0) {
+          d[key].champion = d[key].fighters[0].name;
+        }
+      });
+      return d;
+    }
 
     function getRatingClass(elo) {
       if (elo >= 1700) return 'elo-elite';
@@ -608,6 +635,7 @@
     }
 
     function switchDivision(divisionKey, buttonEl) {
+      activeDivision = divisionKey;
       document.querySelectorAll('.div-btn').forEach(btn => btn.classList.remove('active'));
       buttonEl.classList.add('active');
 
@@ -615,9 +643,33 @@
       document.querySelector(`[data-division="${divisionKey}"]`).classList.add('active');
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    let activeDivision = 'all';
+
+    function render(d) {
+      divisions = finishDivisions(d);
+      document.getElementById('selectorSection').innerHTML = '';
+      document.getElementById('divisionsContainer').innerHTML = '';
       createDivisionButtons();
       createDivisionCards();
+      const keys = Object.keys(divisions);
+      const index = Math.max(0, keys.indexOf(activeDivision));
+      const button = document.querySelectorAll('#selectorSection .div-btn')[index];
+      if (button) switchDivision(keys[index], button);
+    }
+
+    function loadRankings() {
+      if (!window.WDS || !window.WDS.enabled) return Promise.reject(new Error('offline'));
+      return window.WDS.rankings().then(rows => {
+        if (!rows.length) throw new Error('no rankings yet');
+        render(divisionsFromDatabase(rows));
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      render(divisionsFromFights());
+      loadRankings()
+        .then(() => window.WDS.subscribe(['fighter_rankings'], () => loadRankings().catch(() => {})))
+        .catch(e => console.warn('[wds] rankings: using the saved list', e && e.message));
     });
   </script>
 </body>

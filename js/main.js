@@ -20,13 +20,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Event category filter (data-category on .event-card / .ev-card, data-filter on buttons)
   const filterButtons = document.querySelectorAll('.event-filters button');
-  const cards = document.querySelectorAll('.event-card[data-category], .ev-card[data-category]');
   filterButtons.forEach((btn) => {
     btn.addEventListener('click', () => {
       filterButtons.forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
       const filter = btn.dataset.filter;
-      cards.forEach((card) => {
+      // Looked up on each click: cards may be re-rendered from the database.
+      document.querySelectorAll('.event-card[data-category], .ev-card[data-category]').forEach((card) => {
         card.style.display =
           filter === 'all' || card.dataset.category === filter ? '' : 'none';
       });

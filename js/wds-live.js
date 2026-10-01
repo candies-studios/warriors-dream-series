@@ -1,0 +1,241 @@
+/*
+ * WDS live content — fills the existing page markup from the shared database.
+ *
+ *  - Home:   "Upcoming" card + the Events archive grid
+ *  - Events: "Upcoming" panel + the season schedule grid
+ *  - Event:  pages/event.html?e=<slug> — status, details, fight card, final results
+ *
+ * Cards are cloned from the first card already in the page, so the design is
+ * exactly the existing one. If the database cannot be reached, the static
+ * content already in the HTML stays as it is.
+ */
+(function () {
+  'use strict';
+  if (!window.WDS || !window.WDS.enabled) return;
+  var W = window.WDS;
+
+  // Site root relative to this page ("" on the home page, "../" in /pages).
+  var script = document.currentScript;
+  var BASE = script ? (script.getAttribute('src') || '').replace(/js\/wds-live\.js(\?.*)?$/, '') : '';
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function asset(url) {
+    if (!url) return BASE + 'assets/images/footer-fight.jpg';
+    return /^(https?:|data:|\/)/.test(url) ? url : BASE + url;
+  }
+  function eventUrl(ev) { return BASE + 'pages/event.html?e=' + encodeURIComponent(ev.slug); }
+  function setText(el, value) { if (el && value != null) el.textContent = value; }
+  // Replace only the leading text of a button/badge, keeping its icon markup.
+  function setLeadText(el, value) {
+    if (!el) return;
+    var node = Array.prototype.find.call(el.childNodes, function (n) { return n.nodeType === 3 && n.textContent.trim(); });
+    // Keep the node's own surrounding whitespace so markup stays identical.
+    if (node) node.textContent = node.textContent.replace(/\S(?:[\s\S]*\S)?/, value);
+    else el.insertBefore(document.createTextNode(value + ' '), el.firstChild);
+  }
+  function hasCard(ev, counts) { return (counts[ev.id] || 0) > 0; }
+
+  // ---------------------------------------------------------------- cards
+  function fillCard(card, ev, counts) {
+    var img = card.querySelector('.ev-poster img');
+    if (img) { img.src = asset(ev.poster_url); img.alt = ev.title; }
+    setText(card.querySelector('.ev-status'), W.statusLabel(ev.status));
+    setText(card.querySelector('.ev-tag'), W.seriesLabel(ev.series));
+    setText(card.querySelector('.ev-title'), ev.title);
+    setText(card.querySelector('.ev-venue span'), W.formatVenue(ev) || 'To Be Announced');
+    setText(card.querySelector('.ev-date span'), W.formatDate(ev) || 'Date TBA');
+    if (card.hasAttribute('data-category') || card.closest('.archive-section')) card.setAttribute('data-category', ev.series);
+    var btn = card.querySelector('.ev-btn');
+    if (btn) {
+      var internal = hasCard(ev, counts) || !ev.results_url;
+      btn.href = internal ? eventUrl(ev) : ev.results_url;
+      if (internal) { btn.removeAttribute('target'); btn.removeAttribute('rel'); }
+      else { btn.target = '_blank'; btn.rel = 'noopener'; }
+      setLeadText(btn, ev.status === 'completed' ? 'View Results' : ev.status === 'live' ? 'Live Fight Card' : 'Fight Card');
+    }
+    card.setAttribute('data-wds-event', ev.slug);
+    return card;
+  }
+
+  function renderGrid(grid, list, counts) {
+    var template = grid.__wdsTemplate || (grid.__wdsTemplate = grid.querySelector('.ev-card'));
+    if (!template || !list.length) return;
+    var frag = document.createDocumentFragment();
+    list.forEach(function (ev) { frag.appendChild(fillCard(template.cloneNode(true), ev, counts)); });
+    grid.innerHTML = '';
+    grid.appendChild(frag);
+    // Re-apply the active category filter (Home page).
+    var active = document.querySelector('.event-filters button.active');
+    if (active && active.dataset.filter && active.dataset.filter !== 'all') active.click();
+  }
+
+  // ---------------------------------------------------------------- "Upcoming" blocks
+  function linkButton(existing, href, label, className) {
+    var a = existing && existing.tagName === 'A' ? existing : document.createElement('a');
+    a.className = className;
+    a.href = href;
+    a.textContent = label;
+    if (existing && existing !== a) existing.replaceWith(a);
+    return a;
+  }
+
+  function fillHomeUpcoming(card, ev, counts) {
+    var badge = card.querySelector('.status-badge');
+    if (badge) setLeadText(badge, ev.status === 'live' ? 'Live Now' : ev.status === 'completed' ? 'Event Ended' : 'Upcoming');
+    if (badge) badge.classList.toggle('is-live', ev.status === 'live');
+    setText(card.querySelector('.series-label'), W.seriesLabel(ev.series));
+    setText(card.querySelector('h2'), ev.title);
+    var desc = card.querySelector('.upcoming-description');
+    if (ev.description && desc) desc.innerHTML = esc(ev.description).replace(/\n/g, '<br>');
+    var details = card.querySelectorAll('.upcoming-detail span');
+    setText(details[0], W.formatDate(ev) || 'Coming Soon');
+    setText(details[1], W.formatTime(ev) || 'TBA');
+    setText(details[2], W.formatVenue(ev) || 'To Be Announced');
+    var link = card.querySelector('.wds-card-link');
+    if (hasCard(ev, counts) || ev.status === 'live') {
+      if (!link) { link = document.createElement('a'); card.appendChild(link); }
+      linkButton(link, eventUrl(ev), ev.status === 'live' ? 'Live Fight Card' : ev.status === 'completed' ? 'View Results' : 'View Fight Card', 'wds-card-link');
+    } else if (link) {
+      link.remove();
+    }
+  }
+
+  function fillEventsUpcoming(section, ev, counts, opts) {
+    var left = section.querySelector('.eu-left h2');
+    var leftLabel = opts && opts.leftLabel ? opts.leftLabel(ev) : (ev.status === 'live' ? 'Live Now' : 'Upcoming');
+    setText(left, leftLabel);
+    setText(section.querySelector('.eu-title'), ev.title);
+    var values = section.querySelectorAll('.eu-value');
+    setText(values[0], W.formatDate(ev) || 'TBA');
+    setText(values[1], W.formatTime(ev) || 'TBA');
+    setText(values[2], W.formatVenue(ev) || 'TBA');
+    var cta = section.querySelector('.eu-cta');
+    if (!cta) return;
+    if (opts && opts.cta) { opts.cta(cta); return; }
+    if (hasCard(ev, counts) || ev.status === 'live') {
+      linkButton(cta, eventUrl(ev), ev.status === 'live' ? 'Live Fight Card' : ev.status === 'completed' ? 'View Results' : 'View Fight Card', 'eu-cta');
+    } else {
+      var span = document.createElement('span');
+      span.className = 'eu-cta';
+      span.textContent = ev.status === 'cancelled' ? 'Cancelled' : 'Coming Soon';
+      cta.replaceWith(span);
+    }
+  }
+
+  // ---------------------------------------------------------------- fight card
+  function boutRow(b, eventStatus) {
+    var res = W.describeResult(b);
+    var state = b.status === 'LIVE' ? 'Live'
+      : b.result_status === 'final' ? 'Final'
+      : b.result_status === 'pending' ? 'Result pending'
+      : b.status === 'CANCELLED' ? 'Cancelled' : (eventStatus === 'completed' ? 'Result pending' : 'Scheduled');
+    var tags = ['Bout ' + b.bout_number, b.weight_class || b.bout_name, (b.bout_type === 'AMATEUR' ? 'Amateur ' : 'Pro ') + (b.discipline || 'MMA')]
+      .filter(Boolean).join(' · ');
+    function corner(side, name, nick, id) {
+      var winner = res && b.winner_id && b.winner_id === id;
+      return '<div class="wds-corner wds-' + side + (winner ? ' is-winner' : '') + (res && b.winner_id && !winner ? ' is-loser' : '') + '">' +
+        '<span class="wds-corner-label">' + (side === 'blue' ? 'Blue corner' : 'Red corner') + (winner ? ' · Winner' : '') + '</span>' +
+        '<span class="wds-name">' + esc(name || 'To be announced') + '</span>' +
+        (nick ? '<span class="wds-nick">“' + esc(nick) + '”</span>' : '') + '</div>';
+    }
+    return '<article class="wds-bout' + (b.status === 'LIVE' ? ' is-live' : '') + (res ? ' is-final' : '') + '">' +
+      '<div class="wds-bout-head"><span class="ev-tag">' + esc(tags) + '</span><span class="wds-bout-state">' + esc(state) + '</span></div>' +
+      '<div class="wds-bout-body">' + corner('blue', b.blue_name, b.blue_nickname, b.blue_fighter_id) +
+      '<div class="wds-vs">VS</div>' + corner('red', b.red_name, b.red_nickname, b.red_fighter_id) + '</div>' +
+      (res ? '<p class="wds-result">' + esc(res.winner ? res.winner + ' wins' : 'No winner') + ' <span>· ' + esc(res.method) + '</span></p>' : '') +
+      '</article>';
+  }
+
+  function latest(events) {
+    return events.filter(function (e) { return e.status === 'completed' && e.event_date; })
+      .sort(function (a, b) { return a.event_date < b.event_date ? 1 : -1; })[0] || null;
+  }
+
+  // ---------------------------------------------------------------- pages
+  function homePage(events, counts) {
+    var upcoming = document.querySelector('.upcoming-section .upcoming-card');
+    var ev = W.featured(events);
+    // Nothing announced yet: the card shows the latest event and its results.
+    var shown = ev || latest(events);
+    if (upcoming && shown) fillHomeUpcoming(upcoming, shown, counts);
+    var grid = document.querySelector('.archive-section .ev-grid');
+    if (grid) {
+      var past = events.filter(function (e) { return e.status === 'completed' || (e.status === 'live' && e !== ev); });
+      renderGrid(grid, past.slice(0, 5), counts);
+    }
+  }
+
+  function eventsPage(events, counts) {
+    var block = document.querySelector('.event-upcoming');
+    var ev = W.featured(events);
+    var shown = ev || latest(events);
+    if (block && shown) fillEventsUpcoming(block, shown, counts, ev ? null : {
+      leftLabel: function () { return 'Latest'; },
+    });
+    var grid = document.querySelector('.season-section .ev-grid');
+    if (grid) {
+      var year = new Date().getFullYear();
+      var season = events.filter(function (e) {
+        if (e === ev || e.status === 'cancelled') return false;
+        var y = e.event_date ? +e.event_date.slice(0, 4) : year;
+        return y === year || e.status !== 'completed';
+      });
+      renderGrid(grid, season, counts);
+      var title = document.querySelector('.season-title');
+      if (title && /\d{4}/.test(title.textContent)) title.textContent = title.textContent.replace(/\d{4}/, String(year));
+    }
+  }
+
+  function eventPage() {
+    var slug = new URLSearchParams(location.search).get('e');
+    var root = document.getElementById('wds-fight-card');
+    if (!slug || !root) return Promise.resolve();
+    return W.eventBySlug(slug).then(function (ev) {
+      if (!ev) { root.innerHTML = '<p class="wds-empty">This event could not be found.</p>'; return; }
+      document.title = ev.title + ' — Warriors Dream Series';
+      setText(document.querySelector('.page-hero h1'), ev.title);
+      var hero = document.querySelector('.page-hero');
+      if (hero && ev.poster_url) hero.style.backgroundImage = "url('" + asset(ev.poster_url) + "')";
+      return W.card(ev.id).then(function (bouts) {
+        var block = document.querySelector('.event-upcoming');
+        if (block) fillEventsUpcoming(block, ev, {}, {
+          leftLabel: function (e) { return W.statusLabel(e.status) === 'Event Ended' ? 'Results' : W.statusLabel(e.status); },
+          cta: function (cta) {
+            if (ev.results_url && !bouts.length) linkButton(cta, ev.results_url, 'Full Results', 'eu-cta').target = '_blank';
+            else { var s = document.createElement('span'); s.className = 'eu-cta'; s.textContent = W.seriesLabel(ev.series); cta.replaceWith(s); }
+          },
+        });
+        var heading = document.querySelector('.wds-card-title');
+        if (heading) heading.textContent = ev.status === 'completed' ? 'Results' : 'Fight Card';
+        if (!bouts.length) {
+          root.innerHTML = '<p class="wds-empty">' + (ev.status === 'completed'
+            ? 'Results for this event are not available here yet.'
+            : 'The fight card will be announced soon.') + '</p>';
+          return;
+        }
+        root.innerHTML = bouts.map(function (b) { return boutRow(b, ev.status); }).join('');
+      });
+    });
+  }
+
+  function refresh() {
+    var isEventPage = !!document.getElementById('wds-fight-card');
+    if (isEventPage) return eventPage().catch(warn);
+    return Promise.all([W.events(), W.cardCounts()]).then(function (r) {
+      homePage(r[0], r[1]);
+      eventsPage(r[0], r[1]);
+    }).catch(warn);
+  }
+  function warn(e) { console.warn('[wds] showing saved page content:', e && e.message); }
+
+  function start() {
+    refresh();
+    W.subscribe(['events'], refresh);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();
