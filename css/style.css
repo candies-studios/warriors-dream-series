@@ -2030,3 +2030,10 @@ body.community-open { overflow: hidden; }
   .wds-ue-meta { padding: 6px 4px; }
   .wds-ue-meta:first-child { border-left: 0; }
 }
+
+/* Home: link from an upcoming event row to its fight card page */
+.wds-ue-title a { color: inherit; transition: color .2s; }
+.wds-ue-title a:hover { color: #e0181d; }
+.wds-ue-link { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 10px 22px; background: #e0181d; color: #fff; font-family: 'Oswald', sans-serif; font-weight: 600; font-size: .8rem; letter-spacing: .18em; text-transform: uppercase; transition: background .2s; }
+.wds-ue-link span { font-size: 1.2rem; line-height: .5; }
+.wds-ue-link:hover { background: #a8181b; color: #fff; }

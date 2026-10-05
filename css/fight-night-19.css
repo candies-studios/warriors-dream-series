@@ -1,0 +1,189 @@
+/* =========================================================
+   WDS Fight Night 19 — fight card page
+   Used by pages/wds-fight-night-19.html
+   ========================================================= */
+.fn19 {
+  --fn-accent: #e21b23;
+  --fn-line: #292929;
+  --fn-head: Impact, 'Anton', 'Arial Narrow', sans-serif;
+  --fn-body: Arial, Helvetica, sans-serif;
+  width: 100%;
+  padding: 70px 0;
+  color: #fff;
+  font-family: var(--fn-body);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(226,27,35,.12), transparent 34%),
+    linear-gradient(180deg, #090909 0%, #050505 100%);
+  overflow: hidden;
+}
+.fn19 *, .fn19 *::before, .fn19 *::after { box-sizing: border-box; }
+.fn19-container { width: 92%; max-width: 1180px; margin: 0 auto; }
+
+/* ---- Heading ---- */
+.fn19-heading { text-align: center; margin: 0 0 40px; }
+.fn19-kicker {
+  display: inline-flex; align-items: center; gap: 10px;
+  color: var(--fn-accent); font-size: 11px; font-weight: 900;
+  letter-spacing: 3px; text-transform: uppercase;
+}
+.fn19-kicker::before, .fn19-kicker::after { content: ""; width: 28px; height: 1px; background: var(--fn-accent); }
+.fn19-heading h1 {
+  margin: 10px 0 8px; color: #fff;
+  font-family: var(--fn-head); font-size: clamp(52px, 8vw, 92px);
+  font-weight: 400; line-height: .95; letter-spacing: 1px; text-transform: uppercase;
+}
+.fn19-heading p {
+  margin: 0; color: #7b7b7b; font-size: 11px; font-weight: 800;
+  letter-spacing: 2px; text-transform: uppercase;
+}
+
+/* ---- Bout card ---- */
+.fn19-fight {
+  position: relative; margin: 0 0 16px;
+  background: linear-gradient(110deg, #0b0b0b, #080808);
+  border: 1px solid var(--fn-line);
+  transition: border-color .3s, box-shadow .3s;
+}
+.fn19-fight:hover { border-color: #444; }
+.fn19-fight.is-open { border-color: var(--fn-accent); box-shadow: 0 20px 55px rgba(0,0,0,.5); }
+.fn19-fight.main-event, .fn19-fight.co-main {
+  border-color: rgba(226,27,35,.58);
+  background: radial-gradient(circle, rgba(226,27,35,.09), transparent 58%), linear-gradient(110deg, #151515, #080808);
+}
+.fn19-fight.main-event::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4px; z-index: 2;
+  background: linear-gradient(90deg, transparent, var(--fn-accent), transparent);
+}
+.fn19-summary { position: relative; display: flex; flex-direction: column; width: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: inherit; cursor: pointer; }
+.fn19-summary:focus-visible { outline: 2px solid var(--fn-accent); outline-offset: -2px; }
+
+.fn19-bout-header {
+  position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center;
+  gap: 6px; min-height: 48px; padding: 12px 48px 8px; text-align: center;
+}
+.fn19-event-label {
+  display: inline-flex; padding: 6px 14px;
+  border: 1px solid rgba(226,27,35,.65); border-radius: 999px; background: rgba(226,27,35,.11);
+  color: var(--fn-accent); font-size: 10px; font-weight: 900; letter-spacing: 2.2px; line-height: 1;
+  text-transform: uppercase; white-space: nowrap;
+}
+.fn19-bout-label { color: #f5f5f5; font-size: 11px; font-weight: 900; letter-spacing: 2px; line-height: 1.15; text-transform: uppercase; }
+.fn19-open-icon { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: #777; font-size: 17px; line-height: 1; }
+.fn19-fight:hover .fn19-open-icon, .fn19-fight.is-open .fn19-open-icon { color: var(--fn-accent); }
+.fn19-open-icon .minus, .fn19-fight.is-open .plus { display: none; }
+.fn19-fight.is-open .minus { display: inline; }
+
+.fn19-fight.main-event .fn19-bout-header, .fn19-fight.co-main .fn19-bout-header {
+  min-height: 88px; padding: 17px 58px 12px;
+  background: linear-gradient(rgba(226,27,35,.086), rgba(226,27,35,.01));
+}
+.fn19-fight.main-event .fn19-event-label { padding: 8px 20px; font-size: 12px; letter-spacing: 3px; }
+.fn19-fight.co-main .fn19-event-label { padding: 7px 18px; font-size: 11px; letter-spacing: 2.6px; }
+.fn19-fight.main-event .fn19-bout-label, .fn19-fight.co-main .fn19-bout-label { font-size: 13px; letter-spacing: 2.6px; }
+
+/* ---- Matchup row ---- */
+.fn19-matchup { display: grid; grid-template-columns: 250px minmax(0,1fr) 250px; align-items: end; min-height: 255px; padding: 4px 22px 0; }
+.fn19-img { width: 250px; height: 255px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
+.fn19-img img {
+  display: block; width: auto; height: 255px; max-width: 250px; object-fit: contain; object-position: center bottom;
+  filter: drop-shadow(0 15px 20px rgba(0,0,0,.6)); transition: transform .35s, filter .35s;
+}
+.fn19-img img.is-placeholder { height: 200px; opacity: .9; }
+.fn19-fight:hover .fn19-img img { transform: scale(1.025) translateY(-2px); filter: drop-shadow(0 20px 25px rgba(0,0,0,.8)); }
+
+.fn19-names { display: flex; flex-direction: column; align-items: center; justify-content: center; align-self: stretch; padding: 0 12px 18px; text-align: center; }
+.fn19-names .fn19-name {
+  width: 100%; margin: 0; color: #fff; font-family: var(--fn-head);
+  font-size: clamp(24px, 2.7vw, 36px); font-weight: 400; line-height: 1; letter-spacing: .6px; text-transform: uppercase;
+}
+.fn19-vs { display: inline-flex; align-items: center; gap: 10px; margin: 8px 0; color: var(--fn-accent); font-size: 11px; font-weight: 900; letter-spacing: 2px; }
+.fn19-vs::before, .fn19-vs::after { content: ""; width: 28px; height: 1px; background: rgba(226,27,35,.55); }
+
+.fn19-fight.main-event .fn19-matchup, .fn19-fight.co-main .fn19-matchup { grid-template-columns: 270px minmax(0,1fr) 270px; min-height: 285px; }
+.fn19-fight.main-event .fn19-img, .fn19-fight.co-main .fn19-img { width: 270px; height: 285px; }
+.fn19-fight.main-event .fn19-img img, .fn19-fight.co-main .fn19-img img { height: 285px; max-width: 270px; }
+.fn19-fight.main-event:hover .fn19-img img, .fn19-fight.co-main:hover .fn19-img img { transform: none; }
+
+/* ---- Bottom strip ---- */
+.fn19-strip {
+  display: grid; grid-template-columns: 250px minmax(108px,1fr) 250px; align-items: center;
+  min-height: 50px; padding: 7px 22px; background: #050505; border-top: 1px solid #1f1f1f;
+  font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+}
+.fn19-fight.main-event .fn19-strip, .fn19-fight.co-main .fn19-strip { grid-template-columns: 270px minmax(108px,1fr) 270px; }
+.fn19-country { display: flex; align-items: center; justify-content: center; gap: 7px; color: #fff; }
+.fn19-country img { width: 16px; height: 16px; }
+.fn19-weight {
+  justify-self: center; display: inline-flex; align-items: baseline; gap: 6px;
+  padding: 6px 14px; border: 1px solid #b71920; border-radius: 999px; background: #101010;
+}
+.fn19-weight b { font-size: 13px; font-weight: 600; line-height: 1; letter-spacing: 1px; }
+.fn19-weight span { position: relative; padding-bottom: 4px; color: var(--fn-accent); font-size: 9px; font-weight: 700; line-height: 1; letter-spacing: 1.2px; }
+.fn19-weight span::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: currentColor; }
+
+/* ---- Stats (expand) ---- */
+.fn19-details { display: grid; grid-template-rows: 0fr; background: #080808; transition: grid-template-rows .4s cubic-bezier(.2,.8,.2,1); }
+.fn19-fight.is-open .fn19-details { grid-template-rows: 1fr; }
+.fn19-details-inner { min-height: 0; overflow: hidden; }
+.fn19-stat { display: grid; grid-template-columns: minmax(0,1fr) 150px minmax(0,1fr); align-items: center; gap: 18px; min-height: 58px; padding: 11px 30px; border-top: 1px solid #1b1b1b; }
+.fn19-stat .l, .fn19-stat .r { color: #eee; font-size: 13px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+.fn19-stat .l { text-align: right; }
+.fn19-stat .r { text-align: left; }
+.fn19-stat .lab { color: #8a8a8a; font-size: 9px; font-weight: 900; letter-spacing: 1.7px; text-align: center; text-transform: uppercase; }
+.fn19-stat .win { color: #3ccf6e; }
+.fn19-stat .loss { color: var(--fn-accent); }
+
+/* ---- Responsive ---- */
+@media (max-width: 1024px) {
+  .fn19-matchup, .fn19-strip { grid-template-columns: 210px minmax(0,1fr) 210px; }
+  .fn19-matchup { min-height: 225px; padding: 4px 14px 0; }
+  .fn19-strip { padding: 7px 14px; }
+  .fn19-img { width: 210px; height: 225px; }
+  .fn19-img img { height: 225px; max-width: 210px; }
+  .fn19-fight.main-event .fn19-matchup, .fn19-fight.co-main .fn19-matchup,
+  .fn19-fight.main-event .fn19-strip, .fn19-fight.co-main .fn19-strip { grid-template-columns: 230px minmax(0,1fr) 230px; }
+  .fn19-fight.main-event .fn19-matchup, .fn19-fight.co-main .fn19-matchup { min-height: 245px; }
+  .fn19-fight.main-event .fn19-img, .fn19-fight.co-main .fn19-img { width: 230px; height: 245px; }
+  .fn19-fight.main-event .fn19-img img, .fn19-fight.co-main .fn19-img img { height: 245px; max-width: 230px; }
+}
+@media (max-width: 768px) {
+  .fn19 { padding: 45px 0; }
+  .fn19-container { width: 94%; }
+  .fn19-heading { margin-bottom: 30px; padding: 0 8px; }
+  .fn19-kicker { font-size: 9px; letter-spacing: 2px; gap: 7px; }
+  .fn19-kicker::before, .fn19-kicker::after { width: 20px; }
+  .fn19-heading h1 { font-size: clamp(42px, 12vw, 68px); }
+  .fn19-heading p { font-size: 8px; letter-spacing: 1.2px; line-height: 1.5; }
+  .fn19-bout-header { padding: 12px 38px 8px; }
+  .fn19-fight.main-event .fn19-bout-header, .fn19-fight.co-main .fn19-bout-header { min-height: 74px; padding: 14px 38px 10px; }
+  .fn19-event-label, .fn19-fight.main-event .fn19-event-label, .fn19-fight.co-main .fn19-event-label { padding: 6px 11px; font-size: 9px; letter-spacing: 1.6px; }
+  .fn19-bout-label, .fn19-fight.main-event .fn19-bout-label, .fn19-fight.co-main .fn19-bout-label { font-size: 9px; letter-spacing: 1.2px; }
+  .fn19-matchup, .fn19-fight.main-event .fn19-matchup, .fn19-fight.co-main .fn19-matchup,
+  .fn19-strip, .fn19-fight.main-event .fn19-strip, .fn19-fight.co-main .fn19-strip { grid-template-columns: minmax(0,31%) minmax(0,38%) minmax(0,31%); }
+  .fn19-matchup, .fn19-fight.main-event .fn19-matchup, .fn19-fight.co-main .fn19-matchup { min-height: 190px; padding: 5px 3px 0; }
+  .fn19-img, .fn19-fight.main-event .fn19-img, .fn19-fight.co-main .fn19-img { width: 100%; height: 190px; }
+  .fn19-img img, .fn19-fight.main-event .fn19-img img, .fn19-fight.co-main .fn19-img img { height: 190px; max-width: 100%; }
+  .fn19-img img.is-placeholder { height: 140px; }
+  .fn19-names { padding: 0 4px 13px; }
+  .fn19-names .fn19-name { font-size: clamp(17px, 4.3vw, 25px); }
+  .fn19-vs { margin: 6px 0; font-size: 10px; gap: 6px; }
+  .fn19-vs::before, .fn19-vs::after { width: 14px; }
+  .fn19-strip { min-height: 46px; padding: 7px 3px; font-size: 8px; letter-spacing: .5px; }
+  .fn19-weight { padding: 5px 10px; }
+  .fn19-weight b { font-size: 11px; }
+  .fn19-weight span { font-size: 8px; }
+  .fn19-country img { width: 13px; height: 13px; }
+  .fn19-stat { grid-template-columns: minmax(0,1fr) 82px minmax(0,1fr); gap: 8px; min-height: 54px; padding: 10px 12px; }
+  .fn19-stat .l, .fn19-stat .r { font-size: 11px; }
+  .fn19-stat .lab { font-size: 8px; letter-spacing: 1px; }
+}
+@media (max-width: 390px) {
+  .fn19-matchup, .fn19-fight.main-event .fn19-matchup, .fn19-fight.co-main .fn19-matchup { min-height: 165px; }
+  .fn19-img, .fn19-fight.main-event .fn19-img, .fn19-fight.co-main .fn19-img { height: 165px; }
+  .fn19-img img, .fn19-fight.main-event .fn19-img img, .fn19-fight.co-main .fn19-img img { height: 165px; }
+  .fn19-names .fn19-name { font-size: clamp(15px, 4.4vw, 20px); }
+  .fn19-strip { font-size: 7px; }
+}
+@media (prefers-reduced-motion: reduce) { .fn19 * { transition: none !important; } }
+.fn19-names .fn19-name { display: block; }
+.fn19-matchup, .fn19-strip, .fn19-bout-header { width: 100%; }
