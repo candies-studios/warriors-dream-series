@@ -378,6 +378,14 @@ end $$;
 -- ratings rounded after every fight), computed from FINAL results only, in
 -- chronological order. A full recompute keeps corrections exact.
 -- -----------------------------------------------------------------------------
+-- Skipped when migration 4 (committee formula) has already replaced it.
+do $wrap$
+begin
+  if to_regclass('public.ranking_method_weights') is not null then
+    raise notice 'recompute_rankings: committee formula already installed (migration 4) - kept';
+    return;
+  end if;
+  execute $fn$
 create or replace function public.recompute_rankings()
 returns int language plpgsql security definer set search_path = public as $$
 declare
@@ -482,7 +490,9 @@ begin
 
   select count(*) into n from public.fighter_rankings;
   return n;
-end $$;
+end $$
+  $fn$;
+end $wrap$;
 
 -- Management "Recalculate" button (rankings also update automatically).
 create or replace function public.admin_recompute_rankings()
@@ -564,12 +574,18 @@ create trigger roster_rankings_flush after insert or update or delete on public.
   for each statement execute function public.rankings_flush();
 
 -- Public rankings read model.
+do $wrap$
+begin
+  if to_regclass('public.ranking_method_weights') is not null then return; end if;
+  execute $v$
 create or replace view public.public_rankings as
 select fr.fighter_id, f.name, f.nickname, f.photo_url, f.country,
        fr.division_key, fr.division_name, fr.elo, fr.wins, fr.losses, fr.draws, fr.no_contests,
        fr.fights, fr.division_rank, fr.overall_rank, fr.last_fight_on, fr.updated_at
   from public.fighter_rankings fr
-  join public.fighters f on f.id = fr.fighter_id;
+  join public.fighters f on f.id = fr.fighter_id
+  $v$;
+end $wrap$;
 grant select on public.public_rankings to anon, authenticated;
 
 -- -----------------------------------------------------------------------------

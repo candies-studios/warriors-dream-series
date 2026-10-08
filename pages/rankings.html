@@ -328,7 +328,7 @@
   <!-- Main Content -->
   <div class="container">
     <div class="info-section">
-      <strong>📊 ELO Rating System:</strong> Rankings calculated using the professional ELO algorithm. Beating higher-rated fighters gains more points. Losses to top contenders cost less rating.
+      <strong>📊 WDS Ranking Score:</strong> Score = (Win% × 0.7 + Win Method Weight × 0.3) × √(total fights). Every win adds a weight for how it was won — earlier finishes count more (KO/TKO R1 0.75 · R2 0.70 · R3 0.65, Submission R1 0.70 · R2 0.65 · R3 0.60, Decision 0.55). Only official, finalized results count.
     </div>
 
     <!-- Division Selector -->
@@ -439,81 +439,46 @@
 
     let divisions = emptyDivisions();
 
-    class ELOSystem {
-      constructor(k = 32, initialRating = 1500) {
-        this.K = k;
-        this.initialRating = initialRating;
-        this.ratings = {};
-      }
-
-      getOrCreateRating(fighter) {
-        if (!this.ratings[fighter]) {
-          this.ratings[fighter] = this.initialRating;
-        }
-        return this.ratings[fighter];
-      }
-
-      calculateExpectedScore(ratingA, ratingB) {
-        return 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
-      }
-
-      updateRating(fighter, opponentRating, actualScore) {
-        const currentRating = this.getOrCreateRating(fighter);
-        const expectedScore = this.calculateExpectedScore(currentRating, opponentRating);
-        const newRating = currentRating + this.K * (actualScore - expectedScore);
-        this.ratings[fighter] = Math.round(newRating);
-        return this.ratings[fighter];
-      }
-
-      processMatch(fighter1, fighter2, winner) {
-        const rating1 = this.getOrCreateRating(fighter1);
-        const rating2 = this.getOrCreateRating(fighter2);
-
-        if (winner === fighter1) {
-          this.updateRating(fighter1, rating2, 1);
-          this.updateRating(fighter2, rating1, 0);
-        } else {
-          this.updateRating(fighter1, rating2, 0);
-          this.updateRating(fighter2, rating1, 1);
-        }
-      }
+    // Committee formula: (Win% × 0.7 + sum of win method weights × 0.3) × √(total fights)
+    function rankingScore(f) {
+      const total = f.wins + f.losses + (f.draws || 0);
+      if (!total) return 0;
+      return ((f.wins / total) * 100 * 0.7 + f.methodPoints * 0.3) * Math.sqrt(total);
+    }
+    function byScore(a, b) {
+      return (b.score - a.score) || (b.wins - a.wins) || (a.order - b.order);
     }
 
-    // Offline fallback: the original in-page calculation from the list above.
+    // Offline fallback: the saved list above (its win methods were not recorded,
+    // so each win counts as a decision, 0.55 — the same as in the database).
+    const DECISION_WEIGHT = 0.55;
     function divisionsFromFights() {
       const d = emptyDivisions();
-      const elo = new ELOSystem(32, 1500);
-      fights.forEach(fight => {
-        elo.processMatch(fight.fighter1, fight.fighter2, fight.winner);
-      });
-
       const fighterStats = {};
+      let order = 0;
       fights.forEach(fight => {
-        if (!fighterStats[fight.fighter1]) {
-          fighterStats[fight.fighter1] = { name: fight.fighter1, division: fight.division, wins: 0, losses: 0, elo: elo.ratings[fight.fighter1] };
-        }
-        if (!fighterStats[fight.fighter2]) {
-          fighterStats[fight.fighter2] = { name: fight.fighter2, division: fight.division, wins: 0, losses: 0, elo: elo.ratings[fight.fighter2] };
-        }
-        if (fight.winner === fight.fighter1) {
-          fighterStats[fight.fighter1].wins++;
-          fighterStats[fight.fighter2].losses++;
-        } else {
-          fighterStats[fight.fighter2].wins++;
-          fighterStats[fight.fighter1].losses++;
-        }
+        [fight.fighter1, fight.fighter2].forEach(name => {
+          if (!fighterStats[name]) {
+            fighterStats[name] = { name: name, division: fight.division, wins: 0, losses: 0, draws: 0, methodPoints: 0, order: ++order };
+          }
+        });
+        const loser = fight.winner === fight.fighter1 ? fight.fighter2 : fight.fighter1;
+        fighterStats[fight.winner].wins++;
+        fighterStats[fight.winner].methodPoints += DECISION_WEIGHT;
+        fighterStats[loser].losses++;
       });
 
       Object.keys(fighterStats).forEach(fighterName => {
         const fighter = fighterStats[fighterName];
         fighter.record = `${fighter.wins}-${fighter.losses}`;
+        fighter.score = rankingScore(fighter);
         if (d[fighter.division]) {
           d[fighter.division].fighters.push(fighter);
         }
       });
 
       Object.keys(d).forEach(key => {
-        d[key].fighters.sort((a, b) => b.elo - a.elo);
+        d[key].fighters.sort(byScore);
       });
       return d;
     }
@@ -530,8 +495,9 @@
           division: r.division_key,
           wins: r.wins,
           losses: r.losses,
-          elo: r.elo,
+          score: Number(r.score),
           rank: r.division_rank,
+          order: r.overall_rank,
           record: r.draws ? `${r.wins}-${r.losses}-${r.draws}` : `${r.wins}-${r.losses}`
         });
       });
@@ -545,7 +511,7 @@
       d.all.fighters = Object.keys(d)
         .filter(key => key !== 'all')
         .reduce((acc, key) => acc.concat(d[key].fighters), [])
-        .sort((a, b) => b.elo - a.elo);
+        .sort(byScore);
 
       Object.keys(d).forEach(key => {
         if (key !== 'all' && d[key].fighters.length > 0) {
@@ -555,17 +521,21 @@
       return d;
     }
 
-    function getRatingClass(elo) {
-      if (elo >= 1700) return 'elo-elite';
-      if (elo >= 1550) return 'elo-strong';
+    // Display tiers for the score badge.
+    function getRatingClass(score) {
+      if (score >= 100) return 'elo-elite';
+      if (score >= 60) return 'elo-strong';
       return 'elo-developing';
+    }
+    function formatScore(score) {
+      return Number(score).toFixed(2);
     }
 
     function createRankingTable(division) {
-      let table = '<table class="rankings-table"><thead><tr><th style="width: 50px">Rank</th><th>Fighter</th><th style="width: 100px">Record</th><th style="width: 120px">ELO</th></tr></thead><tbody>';
+      let table = '<table class="rankings-table"><thead><tr><th style="width: 50px">Rank</th><th>Fighter</th><th style="width: 100px">Record</th><th style="width: 120px">Score</th></tr></thead><tbody>';
 
       division.fighters.forEach((fighter, index) => {
-        const ratingClass = getRatingClass(fighter.elo);
+        const ratingClass = getRatingClass(fighter.score);
         table += `<tr>
           <td class="rank-num">${index + 1}</td>
           <td>
@@ -575,7 +545,7 @@
             </div>
           </td>
           <td>${fighter.record}</td>
-          <td><span class="elo-rating ${ratingClass}">${fighter.elo}</span></td>
+          <td><span class="elo-rating ${ratingClass}">${formatScore(fighter.score)}</span></td>
         </tr>`;
       });
 
@@ -608,14 +578,14 @@
 
         let championSection = '';
         if (division.champion) {
-          const championElo = division.fighters[0].elo;
-          const championClass = getRatingClass(championElo);
+          const championScore = division.fighters[0].score;
+          const championClass = getRatingClass(championScore);
           championSection = `
             <div class="champion">
               <div class="champion-badge">CHAMPION</div>
               <div class="champion-info">
                 <h3>${division.champion}</h3>
-                <p><span class="elo-rating ${championClass}">${championElo}</span></p>
+                <p><span class="elo-rating ${championClass}">${formatScore(championScore)}</span></p>
               </div>
             </div>
           `;

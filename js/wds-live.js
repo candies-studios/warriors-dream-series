@@ -27,7 +27,10 @@
     if (!url) return BASE + 'assets/images/footer-fight.jpg';
     return /^(https?:|data:|\/)/.test(url) ? url : BASE + url;
   }
-  function eventUrl(ev) { return BASE + 'pages/event.html?e=' + encodeURIComponent(ev.slug); }
+  function eventUrl(ev) {
+    if (ev.page_url) return /^(https?:|\/)/.test(ev.page_url) ? ev.page_url : BASE + ev.page_url;
+    return BASE + 'pages/event.html?e=' + encodeURIComponent(ev.slug);
+  }
   function setText(el, value) { if (el && value != null) el.textContent = value; }
   // Replace only the leading text of a button/badge, keeping its icon markup.
   function setLeadText(el, value) {
@@ -37,14 +40,14 @@
     if (node) node.textContent = node.textContent.replace(/\S(?:[\s\S]*\S)?/, value);
     else el.insertBefore(document.createTextNode(value + ' '), el.firstChild);
   }
-  function hasCard(ev, counts) { return (counts[ev.id] || 0) > 0; }
+  function hasCard(ev, counts) { return (counts[ev.id] || 0) > 0 || !!ev.page_url; }
 
   // ---------------------------------------------------------------- cards
   function fillCard(card, ev, counts) {
     var img = card.querySelector('.ev-poster img');
     if (img) { img.src = asset(ev.poster_url); img.alt = ev.title; }
     setText(card.querySelector('.ev-status'), W.statusLabel(ev.status));
-    setText(card.querySelector('.ev-tag'), W.seriesLabel(ev.series));
+    setText(card.querySelector('.ev-tag'), W.seriesLabel(ev.series, ev));
     setText(card.querySelector('.ev-title'), ev.title);
     setText(card.querySelector('.ev-venue span'), W.formatVenue(ev) || 'To Be Announced');
     setText(card.querySelector('.ev-date span'), W.formatDate(ev) || 'Date TBA');
@@ -87,7 +90,7 @@
     var badge = card.querySelector('.status-badge');
     if (badge) setLeadText(badge, ev.status === 'live' ? 'Live Now' : ev.status === 'completed' ? 'Event Ended' : 'Upcoming');
     if (badge) badge.classList.toggle('is-live', ev.status === 'live');
-    setText(card.querySelector('.series-label'), W.seriesLabel(ev.series));
+    setText(card.querySelector('.series-label'), W.seriesLabel(ev.series, ev));
     setText(card.querySelector('h2'), ev.title);
     var desc = card.querySelector('.upcoming-description');
     if (ev.description && desc) desc.innerHTML = esc(ev.description).replace(/\n/g, '<br>');
@@ -110,14 +113,22 @@
     setText(left, leftLabel);
     setText(section.querySelector('.eu-title'), ev.title);
     var values = section.querySelectorAll('.eu-value');
-    setText(values[0], W.formatDate(ev) || 'TBA');
+    setText(values[0], (opts && opts.dateText ? opts.dateText(ev) : W.formatDate(ev)) || 'TBA');
     setText(values[1], W.formatTime(ev) || 'TBA');
     setText(values[2], W.formatVenue(ev) || 'TBA');
     var cta = section.querySelector('.eu-cta');
-    if (!cta) return;
+    if (!cta) {
+      // Template band without a button: add one only when there is a card to show.
+      if (!(hasCard(ev, counts) || ev.status === 'live') || (opts && opts.cta)) return;
+      cta = document.createElement('a');
+      var right = section.querySelector('.eu-right') || section;
+      right.appendChild(cta);
+    }
     if (opts && opts.cta) { opts.cta(cta); return; }
     if (hasCard(ev, counts) || ev.status === 'live') {
       linkButton(cta, eventUrl(ev), ev.status === 'live' ? 'Live Fight Card' : ev.status === 'completed' ? 'View Results' : 'View Fight Card', 'eu-cta');
+    } else if (section.classList.contains('eu-live')) {
+      cta.remove();
     } else {
       var span = document.createElement('span');
       span.className = 'eu-cta';
@@ -150,6 +161,82 @@
       '</article>';
   }
 
+  function upcomingEvents(events) {
+    var rank = { live: 0, scheduled: 1, announced: 2 };
+    return events.filter(function (e) { return e.status in rank; }).sort(function (a, b) {
+      if (rank[a.status] !== rank[b.status]) return rank[a.status] - rank[b.status];
+      var ta = a.starts_at ? Date.parse(a.starts_at) : Infinity, tb = b.starts_at ? Date.parse(b.starts_at) : Infinity;
+      return ta - tb;
+    });
+  }
+
+  var NBSP = '\u00a0';
+  function fillMeta(meta, value, sub) {
+    if (!meta) return;
+    setText(meta.querySelector('.wds-ue-value'), value);
+    setText(meta.querySelector('.wds-ue-sub'), sub || NBSP);
+  }
+
+  // Home: <div class="wds-ue-list"> of <article class="wds-ue-event">
+  function fillUeEvent(article, ev, counts) {
+    setText(article.querySelector('.wds-ue-series'), W.seriesLabel(ev.series, ev));
+    var linked = hasCard(ev, counts) || ev.status === 'live';
+    var title = article.querySelector('.wds-ue-title');
+    if (title) {
+      if (linked) title.innerHTML = '<a href="' + esc(eventUrl(ev)) + '">' + esc(ev.title) + '</a>';
+      else title.textContent = ev.title;
+    }
+    var desc = article.querySelector('.wds-ue-desc');
+    if (desc) { desc.textContent = ev.description || ''; desc.hidden = !ev.description; }
+    var link = article.querySelector('.wds-ue-link');
+    if (linked) {
+      if (!link) {
+        link = document.createElement('a');
+        link.className = 'wds-ue-link';
+        (article.querySelector('.wds-ue-info') || article).appendChild(link);
+      }
+      link.href = eventUrl(ev);
+      link.innerHTML = esc(ev.status === 'live' ? 'Live Fight Card' : ev.status === 'completed' ? 'View Results' : 'View Fight Card') + ' <span aria-hidden="true">›</span>';
+    } else if (link) {
+      link.remove();
+    }
+    var metas = article.querySelectorAll('.wds-ue-meta');
+    var d = W.dateParts(ev);
+    fillMeta(metas[0], d.value, d.sub);
+    var time = W.formatTime(ev);
+    fillMeta(metas[1], time || 'TBA', time ? 'Onwards' : '');
+    fillMeta(metas[2], ev.venue || 'TBA', ev.city || '');
+    article.setAttribute('data-wds-event', ev.slug);
+    return article;
+  }
+
+  function renderUeList(listEl, list, counts) {
+    var template = listEl.__wdsTemplate || (listEl.__wdsTemplate = listEl.querySelector('.wds-ue-event'));
+    if (!template || !list.length) return;
+    var frag = document.createDocumentFragment();
+    list.forEach(function (ev) { frag.appendChild(fillUeEvent(template.cloneNode(true), ev, counts)); });
+    listEl.innerHTML = '';
+    listEl.appendChild(frag);
+  }
+
+  // Events page: one <section class="event-upcoming eu-live"> band per upcoming event
+  function renderEuBands(list, counts) {
+    var bands = Array.prototype.slice.call(document.querySelectorAll('.event-upcoming.eu-live'));
+    if (!bands.length || !list.length) return;
+    var holder = window.__wdsEuTemplate || (window.__wdsEuTemplate = bands[0].cloneNode(true));
+    var anchor = bands[0];
+    var frag = document.createDocumentFragment();
+    list.forEach(function (ev) {
+      var band = holder.cloneNode(true);
+      band.className = 'event-upcoming eu-live';
+      fillEventsUpcoming(band, ev, counts, { dateText: W.dateText });
+      band.setAttribute('data-wds-event', ev.slug);
+      frag.appendChild(band);
+    });
+    anchor.parentNode.insertBefore(frag, anchor);
+    bands.forEach(function (b) { b.remove(); });
+  }
+
   function latest(events) {
     return events.filter(function (e) { return e.status === 'completed' && e.event_date; })
       .sort(function (a, b) { return a.event_date < b.event_date ? 1 : -1; })[0] || null;
@@ -157,6 +244,11 @@
 
   // ---------------------------------------------------------------- pages
   function homePage(events, counts) {
+    var ueList = document.querySelector('.wds-ue-list');
+    if (ueList) {
+      var coming = upcomingEvents(events);
+      renderUeList(ueList, coming.length ? coming : [latest(events)].filter(Boolean), counts);
+    }
     var upcoming = document.querySelector('.upcoming-section .upcoming-card');
     var ev = W.featured(events);
     // Nothing announced yet: the card shows the latest event and its results.
@@ -170,17 +262,27 @@
   }
 
   function eventsPage(events, counts) {
-    var block = document.querySelector('.event-upcoming');
     var ev = W.featured(events);
-    var shown = ev || latest(events);
-    if (block && shown) fillEventsUpcoming(block, shown, counts, ev ? null : {
-      leftLabel: function () { return 'Latest'; },
-    });
+    if (document.querySelector('.event-upcoming.eu-live')) {
+      var coming = upcomingEvents(events);
+      renderEuBands(coming.length ? coming : [latest(events)].filter(Boolean), counts);
+    } else {
+      // Original single "Upcoming" panel layout.
+      var block = document.querySelector('.event-upcoming');
+      var shown = ev || latest(events);
+      if (block && shown) fillEventsUpcoming(block, shown, counts, ev ? null : {
+        leftLabel: function () { return 'Latest'; },
+      });
+    }
     var grid = document.querySelector('.season-section .ev-grid');
     if (grid) {
       var year = new Date().getFullYear();
+      var gridSection = grid.closest('.season-section');
+      var gridTitle = gridSection && gridSection.querySelector('.season-title');
+      var pastOnly = !!gridTitle && /past/i.test(gridTitle.textContent);
       var season = events.filter(function (e) {
         if (e === ev || e.status === 'cancelled') return false;
+        if (pastOnly) return e.status === 'completed';
         var y = e.event_date ? +e.event_date.slice(0, 4) : year;
         return y === year || e.status !== 'completed';
       });

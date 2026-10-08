@@ -651,6 +651,14 @@
                         <label>Short description</label>
                         <input type="text" id="eventDescription" placeholder="The next generation of MMA warriors prepare for battle.">
                     </div>
+                    <div class="form-group">
+                        <label>Custom event page (optional)</label>
+                        <input type="text" id="eventPageUrl" placeholder="pages/wds-fight-night-19.html">
+                    </div>
+                    <div class="form-group">
+                        <label>Label shown instead of series (optional)</label>
+                        <input type="text" id="eventSeriesLabel" placeholder="Warriors Dream Series">
+                    </div>
                 </div>
                 <div class="form-actions">
                     <button id="eventSubmit" onclick="saveEvent()">Create Event</button>
@@ -799,8 +807,13 @@
                 <div class="form-actions">
                     <button class="btn-secondary" onclick="recalculateRankings()">Recalculate Now</button>
                 </div>
-                <p class="form-hint">Rankings update automatically whenever results are finalized; only finalized results count.</p>
+                <p class="form-hint">Score = (Win% × 0.7 + Win Method Weight × 0.3) × √(total fights). Rankings update automatically whenever results are finalized or a weight is changed; only finalized results count.</p>
                 <div id="rankingsList"></div>
+
+                <h2 style="margin-top: 40px;">Win Method Weights</h2>
+                <p class="form-hint">Each win adds the weight for how and in which round it ended (round 4/5 finishes use the round-3 weight). Rows marked "to confirm" are not on the committee sheet yet.</p>
+                <div id="weightsMessage"></div>
+                <div id="weightsList"></div>
             </div>
         </div>
     </div>

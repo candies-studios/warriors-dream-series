@@ -212,6 +212,8 @@ function eventFormValues() {
         city: orNull(val('eventCity')),
         poster_url: orNull(val('eventPoster')),
         description: orNull(val('eventDescription')),
+        page_url: orNull(val('eventPageUrl')),
+        series_label: orNull(val('eventSeriesLabel')),
     };
 }
 
@@ -248,6 +250,8 @@ async function editEvent(id) {
     setVal('eventCity', ev.city);
     setVal('eventPoster', ev.poster_url);
     setVal('eventDescription', ev.description);
+    setVal('eventPageUrl', ev.page_url);
+    setVal('eventSeriesLabel', ev.series_label);
     document.getElementById('eventSubmit').textContent = 'Update Event';
     document.getElementById('eventCancel').style.display = '';
     document.getElementById('eventTitle').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -255,7 +259,7 @@ async function editEvent(id) {
 
 function resetEventForm() {
     editingEventId = null;
-    ['eventTitle', 'eventDate', 'eventEndDate', 'eventTime', 'eventLocation', 'eventCity', 'eventPoster', 'eventDescription'].forEach(id => setVal(id, ''));
+    ['eventTitle', 'eventDate', 'eventEndDate', 'eventTime', 'eventLocation', 'eventCity', 'eventPoster', 'eventDescription', 'eventPageUrl', 'eventSeriesLabel'].forEach(id => setVal(id, ''));
     setVal('eventStatus', 'draft');
     setVal('eventSeries', 'rising-star');
     document.getElementById('eventSubmit').textContent = 'Create Event';
@@ -488,18 +492,61 @@ async function loadScorecards() {
 async function loadRankings() {
     const container = spinner('rankingsList');
     const weightClass = val('rankingWeightClass');
-    let query = db.from('public_rankings').select('name,nickname,division_name,elo,wins,losses,draws,division_rank,overall_rank');
+    let query = db.from('public_rankings').select('name,nickname,division_name,score,win_pct,method_points,wins,losses,draws,division_rank,overall_rank');
     query = weightClass ? query.eq('division_name', weightClass).order('division_rank') : query.order('overall_rank');
     const { data, error } = await query;
+    loadWeights();
     if (error) { container.innerHTML = `<div class="message error">Error: ${esc(error.message)}</div>`; return; }
     if (!data.length) {
         container.innerHTML = '<div class="empty-state"><p>No rankings yet</p><p>Finalize some results to see rankings</p></div>';
         return;
     }
-    container.innerHTML = '<table class="data-table"><thead><tr><th>Rank</th><th>Fighter</th><th>Weight Class</th><th>ELO</th><th>Record</th></tr></thead><tbody>' +
+    container.innerHTML = '<table class="data-table"><thead><tr><th>Rank</th><th>Fighter</th><th>Weight Class</th><th>Score</th><th>Win %</th><th>Method pts</th><th>Record</th></tr></thead><tbody>' +
         data.map(r => `<tr><td>#${weightClass ? r.division_rank : r.overall_rank}</td><td>${esc(r.name)}${r.nickname ? ' (' + esc(r.nickname) + ')' : ''}</td>` +
-            `<td>${esc(r.division_name)}</td><td>${r.elo}</td><td>${r.wins}W - ${r.losses}L${r.draws ? ' - ' + r.draws + 'D' : ''}</td></tr>`).join('') +
+            `<td>${esc(r.division_name)}</td><td><strong>${Number(r.score).toFixed(2)}</strong></td><td>${Number(r.win_pct).toFixed(1)}%</td>` +
+            `<td>${Number(r.method_points).toFixed(2)}</td><td>${r.wins}W - ${r.losses}L${r.draws ? ' - ' + r.draws + 'D' : ''}</td></tr>`).join('') +
         '</tbody></table>';
+}
+
+const METHOD_LABELS = {
+    KO_HEAD: 'KO (head)', KO_BODY: 'KO (body)', TKO: 'TKO / referee stoppage', DOCTOR_STOPPAGE: 'Doctor stoppage',
+    CORNER_STOPPAGE: 'Corner stoppage', SUBMISSION: 'Submission', RNC: 'Verbal submission',
+    DECISION_UNANIMOUS: 'Unanimous decision', DECISION_SPLIT: 'Split decision', DECISION_MAJORITY: 'Majority decision',
+    DQ: 'Disqualification',
+};
+const METHOD_ORDER = Object.keys(METHOD_LABELS);
+
+async function loadWeights() {
+    const container = document.getElementById('weightsList');
+    if (!container) return;
+    const { data, error } = await db.from('ranking_method_weights').select('result_type,round_no,weight,confirmed,note');
+    if (error) { container.innerHTML = `<div class="message error">Error: ${esc(error.message)}</div>`; return; }
+    data.sort((a, b) => METHOD_ORDER.indexOf(a.result_type) - METHOD_ORDER.indexOf(b.result_type) || a.round_no - b.round_no);
+    const editable = isStaff();
+    container.innerHTML = '<table class="data-table"><thead><tr><th>Win method</th><th>Round</th><th>Weight</th><th>Status</th><th></th></tr></thead><tbody>' +
+        data.map(w => {
+            const key = `${w.result_type}:${w.round_no}`;
+            const input = editable
+                ? `<input type="number" step="0.01" min="0" max="10" value="${Number(w.weight)}" data-weight="${esc(key)}" style="width: 90px">`
+                : Number(w.weight).toFixed(2);
+            return `<tr><td>${esc(METHOD_LABELS[w.result_type] || w.result_type)}</td><td>${w.round_no ? 'R' + w.round_no : 'Any'}</td>` +
+                `<td>${input}</td><td>${w.confirmed ? pill('committee', 'final') : pill('to confirm', 'provisional')}</td>` +
+                `<td>${editable ? `<button class="btn-secondary" onclick="saveWeight('${esc(key)}')">${w.confirmed ? 'Save' : 'Save &amp; confirm'}</button>` : ''}</td></tr>`;
+        }).join('') + '</tbody></table>';
+}
+
+async function saveWeight(key) {
+    if (!requireStaff('weightsMessage')) return;
+    const [resultType, roundNo] = key.split(':');
+    const input = document.querySelector(`[data-weight="${key}"]`);
+    const weight = Number(input && input.value);
+    if (!(weight >= 0 && weight <= 10)) { showMessage('weightsMessage', 'Enter a weight between 0 and 10', 'error'); return; }
+    const { data, error } = await db.from('ranking_method_weights')
+        .update({ weight, confirmed: true })
+        .eq('result_type', resultType).eq('round_no', Number(roundNo)).select('result_type');
+    if (error || !data.length) { showMessage('weightsMessage', 'Error: ' + friendly(error || { message: 'permission denied' }), 'error'); return; }
+    showMessage('weightsMessage', `${METHOD_LABELS[resultType] || resultType}${Number(roundNo) ? ' R' + roundNo : ''} = ${weight}. Rankings recalculated.`, 'success');
+    loadRankings();
 }
 
 async function recalculateRankings() {

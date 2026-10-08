@@ -25,7 +25,7 @@
   }
 
   var EVENT_COLS = 'id,slug,title,series,status,event_date,end_date,start_time,timezone,venue,city,' +
-    'description,poster_url,results_url,starts_at,card_updated_at';
+    'description,poster_url,results_url,starts_at,card_updated_at,page_url,series_label';
 
   // ---- formatting (matches the site's existing copy, e.g. "25th - 26th July, 2026")
   var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -44,6 +44,15 @@
     var b = parts(ev.end_date);
     if (a.m === b.m && a.y === b.y) return ordinal(a.d) + ' - ' + ordinal(b.d) + ' ' + MONTHS[a.m] + ', ' + a.y;
     return ordinal(a.d) + ' ' + MONTHS[a.m] + ' - ' + ordinal(b.d) + ' ' + MONTHS[b.m] + ', ' + b.y;
+  }
+  // Split form used by the Upcoming Events list: { value: '24–25', sub: 'October, 2026' }
+  function dateParts(ev) {
+    if (!ev || !ev.event_date) return { value: 'TBA', sub: '' };
+    var a = parts(ev.event_date);
+    var b = ev.end_date && ev.end_date !== ev.event_date ? parts(ev.end_date) : null;
+    if (!b) return { value: String(a.d), sub: MONTHS[a.m] + ', ' + a.y };
+    if (a.m === b.m && a.y === b.y) return { value: a.d + '–' + b.d, sub: MONTHS[a.m] + ', ' + a.y };
+    return { value: a.d + ' ' + MONTHS[a.m].slice(0, 3) + ' – ' + b.d + ' ' + MONTHS[b.m].slice(0, 3), sub: String(b.y) };
   }
   function formatTime(ev) {
     if (!ev || !ev.start_time) return null;
@@ -151,9 +160,11 @@
     subscribe: subscribe,
     formatDate: formatDate,
     formatTime: formatTime,
+    dateParts: dateParts,
+    dateText: function (ev) { var d = dateParts(ev); return d.sub ? d.value + ' ' + d.sub : d.value; },
     formatVenue: formatVenue,
     describeResult: describeResult,
-    seriesLabel: function (s) { return SERIES[s] || SERIES.other; },
+    seriesLabel: function (s, ev) { return (ev && ev.series_label) || SERIES[s] || SERIES.other; },
     statusLabel: function (s) { return STATUS[s] || s; },
   };
 })();

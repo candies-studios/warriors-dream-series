@@ -1,0 +1,1063 @@
+From 2af1ded1fea374845ff29eb03be6b3a6503e2297 Mon Sep 17 00:00:00 2001
+From: Sushil Chandanshive <sushilcs89@gmail.com>
+Date: Thu, 8 Oct 2026 14:49:29 +0000
+Subject: [PATCH] Rank fighters by the committee formula; drive the new
+ Upcoming Events from the database
+
+Score = (Win% x 0.7 + sum of win method weights x 0.3) x sqrt(total fights),
+from finalized results only. Weights are a database table management can edit
+from the admin dashboard; rankings recalculate on every change. Rankings page
+shows Score instead of ELO.
+
+The Home "Upcoming Events" list and the Events page upcoming bands (added on
+5 Oct) are now filled from the database, using the existing markup as the
+template. Seed brought up to date for Rising Star 8 and Fight Night 19.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_015AUtBHH8bDft2Ejpj9vkH1
+---
+ admin-dashboard.html                          |  15 +-
+ css/wds-live.css                              |   3 +
+ js/admin-dashboard.js                         |  55 +++-
+ js/wds-data.js                                |  15 +-
+ js/wds-live.js                                | 124 +++++++-
+ pages/rankings.html                           | 110 +++----
+ supabase/README.md                            |  38 ++-
+ ...0261001000200_wds_scoring_and_rankings.sql |  20 +-
+ ...08000400_wds_committee_ranking_formula.sql | 285 ++++++++++++++++++
+ ...20261008000500_wds_upcoming_events_oct.sql |  38 +++
+ 10 files changed, 611 insertions(+), 92 deletions(-)
+ create mode 100644 supabase/migrations/20261008000400_wds_committee_ranking_formula.sql
+ create mode 100644 supabase/migrations/20261008000500_wds_upcoming_events_oct.sql
+
+diff --git a/admin-dashboard.html b/admin-dashboard.html
+index 8cf4cd4..2e32e03 100644
+--- a/admin-dashboard.html
++++ b/admin-dashboard.html
+@@ -651,6 +651,14 @@
+                         <label>Short description</label>
+                         <input type="text" id="eventDescription" placeholder="The next generation of MMA warriors prepare for battle.">
+                     </div>
++                    <div class="form-group">
++                        <label>Custom event page (optional)</label>
++                        <input type="text" id="eventPageUrl" placeholder="pages/wds-fight-night-19.html">
++                    </div>
++                    <div class="form-group">
++                        <label>Label shown instead of series (optional)</label>
++                        <input type="text" id="eventSeriesLabel" placeholder="Warriors Dream Series">
++                    </div>
+                 </div>
+                 <div class="form-actions">
+                     <button id="eventSubmit" onclick="saveEvent()">Create Event</button>
+@@ -799,8 +807,13 @@
+                 <div class="form-actions">
+                     <button class="btn-secondary" onclick="recalculateRankings()">Recalculate Now</button>
+                 </div>
+-                <p class="form-hint">Rankings update automatically whenever results are finalized; only finalized results count.</p>
++                <p class="form-hint">Score = (Win% × 0.7 + Win Method Weight × 0.3) × √(total fights). Rankings update automatically whenever results are finalized or a weight is changed; only finalized results count.</p>
+                 <div id="rankingsList"></div>
++
++                <h2 style="margin-top: 40px;">Win Method Weights</h2>
++                <p class="form-hint">Each win adds the weight for how and in which round it ended (round 4/5 finishes use the round-3 weight). Rows marked "to confirm" are not on the committee sheet yet.</p>
++                <div id="weightsMessage"></div>
++                <div id="weightsList"></div>
+             </div>
+         </div>
+     </div>
+diff --git a/css/wds-live.css b/css/wds-live.css
+index 5e23d83..4c545f7 100644
+--- a/css/wds-live.css
++++ b/css/wds-live.css
+@@ -112,3 +112,6 @@ a.eu-cta:hover { background: var(--red, #d7272a); color: #fff; }
+   .wds-red { text-align: left; align-items: flex-start; }
+   .wds-vs { font-size: 1.1rem; }
+ }
++
++/* Events page upcoming bands: values read in capitals, as on the published page */
++.eu-live .eu-value { text-transform: uppercase; }
+diff --git a/js/admin-dashboard.js b/js/admin-dashboard.js
+index 60fd498..efcb79b 100644
+--- a/js/admin-dashboard.js
++++ b/js/admin-dashboard.js
+@@ -212,6 +212,8 @@ function eventFormValues() {
+         city: orNull(val('eventCity')),
+         poster_url: orNull(val('eventPoster')),
+         description: orNull(val('eventDescription')),
++        page_url: orNull(val('eventPageUrl')),
++        series_label: orNull(val('eventSeriesLabel')),
+     };
+ }
+ 
+@@ -248,6 +250,8 @@ async function editEvent(id) {
+     setVal('eventCity', ev.city);
+     setVal('eventPoster', ev.poster_url);
+     setVal('eventDescription', ev.description);
++    setVal('eventPageUrl', ev.page_url);
++    setVal('eventSeriesLabel', ev.series_label);
+     document.getElementById('eventSubmit').textContent = 'Update Event';
+     document.getElementById('eventCancel').style.display = '';
+     document.getElementById('eventTitle').scrollIntoView({ behavior: 'smooth', block: 'center' });
+@@ -255,7 +259,7 @@ async function editEvent(id) {
+ 
+ function resetEventForm() {
+     editingEventId = null;
+-    ['eventTitle', 'eventDate', 'eventEndDate', 'eventTime', 'eventLocation', 'eventCity', 'eventPoster', 'eventDescription'].forEach(id => setVal(id, ''));
++    ['eventTitle', 'eventDate', 'eventEndDate', 'eventTime', 'eventLocation', 'eventCity', 'eventPoster', 'eventDescription', 'eventPageUrl', 'eventSeriesLabel'].forEach(id => setVal(id, ''));
+     setVal('eventStatus', 'draft');
+     setVal('eventSeries', 'rising-star');
+     document.getElementById('eventSubmit').textContent = 'Create Event';
+@@ -488,20 +492,63 @@ async function loadScorecards() {
+ async function loadRankings() {
+     const container = spinner('rankingsList');
+     const weightClass = val('rankingWeightClass');
+-    let query = db.from('public_rankings').select('name,nickname,division_name,elo,wins,losses,draws,division_rank,overall_rank');
++    let query = db.from('public_rankings').select('name,nickname,division_name,score,win_pct,method_points,wins,losses,draws,division_rank,overall_rank');
+     query = weightClass ? query.eq('division_name', weightClass).order('division_rank') : query.order('overall_rank');
+     const { data, error } = await query;
++    loadWeights();
+     if (error) { container.innerHTML = `<div class="message error">Error: ${esc(error.message)}</div>`; return; }
+     if (!data.length) {
+         container.innerHTML = '<div class="empty-state"><p>No rankings yet</p><p>Finalize some results to see rankings</p></div>';
+         return;
+     }
+-    container.innerHTML = '<table class="data-table"><thead><tr><th>Rank</th><th>Fighter</th><th>Weight Class</th><th>ELO</th><th>Record</th></tr></thead><tbody>' +
++    container.innerHTML = '<table class="data-table"><thead><tr><th>Rank</th><th>Fighter</th><th>Weight Class</th><th>Score</th><th>Win %</th><th>Method pts</th><th>Record</th></tr></thead><tbody>' +
+         data.map(r => `<tr><td>#${weightClass ? r.division_rank : r.overall_rank}</td><td>${esc(r.name)}${r.nickname ? ' (' + esc(r.nickname) + ')' : ''}</td>` +
+-            `<td>${esc(r.division_name)}</td><td>${r.elo}</td><td>${r.wins}W - ${r.losses}L${r.draws ? ' - ' + r.draws + 'D' : ''}</td></tr>`).join('') +
++            `<td>${esc(r.division_name)}</td><td><strong>${Number(r.score).toFixed(2)}</strong></td><td>${Number(r.win_pct).toFixed(1)}%</td>` +
++            `<td>${Number(r.method_points).toFixed(2)}</td><td>${r.wins}W - ${r.losses}L${r.draws ? ' - ' + r.draws + 'D' : ''}</td></tr>`).join('') +
+         '</tbody></table>';
+ }
+ 
++const METHOD_LABELS = {
++    KO_HEAD: 'KO (head)', KO_BODY: 'KO (body)', TKO: 'TKO / referee stoppage', DOCTOR_STOPPAGE: 'Doctor stoppage',
++    CORNER_STOPPAGE: 'Corner stoppage', SUBMISSION: 'Submission', RNC: 'Verbal submission',
++    DECISION_UNANIMOUS: 'Unanimous decision', DECISION_SPLIT: 'Split decision', DECISION_MAJORITY: 'Majority decision',
++    DQ: 'Disqualification',
++};
++const METHOD_ORDER = Object.keys(METHOD_LABELS);
++
++async function loadWeights() {
++    const container = document.getElementById('weightsList');
++    if (!container) return;
++    const { data, error } = await db.from('ranking_method_weights').select('result_type,round_no,weight,confirmed,note');
++    if (error) { container.innerHTML = `<div class="message error">Error: ${esc(error.message)}</div>`; return; }
++    data.sort((a, b) => METHOD_ORDER.indexOf(a.result_type) - METHOD_ORDER.indexOf(b.result_type) || a.round_no - b.round_no);
++    const editable = isStaff();
++    container.innerHTML = '<table class="data-table"><thead><tr><th>Win method</th><th>Round</th><th>Weight</th><th>Status</th><th></th></tr></thead><tbody>' +
++        data.map(w => {
++            const key = `${w.result_type}:${w.round_no}`;
++            const input = editable
++                ? `<input type="number" step="0.01" min="0" max="10" value="${Number(w.weight)}" data-weight="${esc(key)}" style="width: 90px">`
++                : Number(w.weight).toFixed(2);
++            return `<tr><td>${esc(METHOD_LABELS[w.result_type] || w.result_type)}</td><td>${w.round_no ? 'R' + w.round_no : 'Any'}</td>` +
++                `<td>${input}</td><td>${w.confirmed ? pill('committee', 'final') : pill('to confirm', 'provisional')}</td>` +
++                `<td>${editable ? `<button class="btn-secondary" onclick="saveWeight('${esc(key)}')">${w.confirmed ? 'Save' : 'Save &amp; confirm'}</button>` : ''}</td></tr>`;
++        }).join('') + '</tbody></table>';
++}
++
++async function saveWeight(key) {
++    if (!requireStaff('weightsMessage')) return;
++    const [resultType, roundNo] = key.split(':');
++    const input = document.querySelector(`[data-weight="${key}"]`);
++    const weight = Number(input && input.value);
++    if (!(weight >= 0 && weight <= 10)) { showMessage('weightsMessage', 'Enter a weight between 0 and 10', 'error'); return; }
++    const { data, error } = await db.from('ranking_method_weights')
++        .update({ weight, confirmed: true })
++        .eq('result_type', resultType).eq('round_no', Number(roundNo)).select('result_type');
++    if (error || !data.length) { showMessage('weightsMessage', 'Error: ' + friendly(error || { message: 'permission denied' }), 'error'); return; }
++    showMessage('weightsMessage', `${METHOD_LABELS[resultType] || resultType}${Number(roundNo) ? ' R' + roundNo : ''} = ${weight}. Rankings recalculated.`, 'success');
++    loadRankings();
++}
++
+ async function recalculateRankings() {
+     const { data, error } = await db.rpc('admin_recompute_rankings');
+     if (error) { alert(friendly(error)); return; }
+diff --git a/js/wds-data.js b/js/wds-data.js
+index aa382f1..c8bb574 100644
+--- a/js/wds-data.js
++++ b/js/wds-data.js
+@@ -25,7 +25,7 @@
+   }
+ 
+   var EVENT_COLS = 'id,slug,title,series,status,event_date,end_date,start_time,timezone,venue,city,' +
+-    'description,poster_url,results_url,starts_at,card_updated_at';
++    'description,poster_url,results_url,starts_at,card_updated_at,page_url,series_label';
+ 
+   // ---- formatting (matches the site's existing copy, e.g. "25th - 26th July, 2026")
+   var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+@@ -45,6 +45,15 @@
+     if (a.m === b.m && a.y === b.y) return ordinal(a.d) + ' - ' + ordinal(b.d) + ' ' + MONTHS[a.m] + ', ' + a.y;
+     return ordinal(a.d) + ' ' + MONTHS[a.m] + ' - ' + ordinal(b.d) + ' ' + MONTHS[b.m] + ', ' + b.y;
+   }
++  // Split form used by the Upcoming Events list: { value: '24–25', sub: 'October, 2026' }
++  function dateParts(ev) {
++    if (!ev || !ev.event_date) return { value: 'TBA', sub: '' };
++    var a = parts(ev.event_date);
++    var b = ev.end_date && ev.end_date !== ev.event_date ? parts(ev.end_date) : null;
++    if (!b) return { value: String(a.d), sub: MONTHS[a.m] + ', ' + a.y };
++    if (a.m === b.m && a.y === b.y) return { value: a.d + '–' + b.d, sub: MONTHS[a.m] + ', ' + a.y };
++    return { value: a.d + ' ' + MONTHS[a.m].slice(0, 3) + ' – ' + b.d + ' ' + MONTHS[b.m].slice(0, 3), sub: String(b.y) };
++  }
+   function formatTime(ev) {
+     if (!ev || !ev.start_time) return null;
+     var t = String(ev.start_time).split(':');
+@@ -151,9 +160,11 @@
+     subscribe: subscribe,
+     formatDate: formatDate,
+     formatTime: formatTime,
++    dateParts: dateParts,
++    dateText: function (ev) { var d = dateParts(ev); return d.sub ? d.value + ' ' + d.sub : d.value; },
+     formatVenue: formatVenue,
+     describeResult: describeResult,
+-    seriesLabel: function (s) { return SERIES[s] || SERIES.other; },
++    seriesLabel: function (s, ev) { return (ev && ev.series_label) || SERIES[s] || SERIES.other; },
+     statusLabel: function (s) { return STATUS[s] || s; },
+   };
+ })();
+diff --git a/js/wds-live.js b/js/wds-live.js
+index e456cf0..debc054 100644
+--- a/js/wds-live.js
++++ b/js/wds-live.js
+@@ -27,7 +27,10 @@
+     if (!url) return BASE + 'assets/images/footer-fight.jpg';
+     return /^(https?:|data:|\/)/.test(url) ? url : BASE + url;
+   }
+-  function eventUrl(ev) { return BASE + 'pages/event.html?e=' + encodeURIComponent(ev.slug); }
++  function eventUrl(ev) {
++    if (ev.page_url) return /^(https?:|\/)/.test(ev.page_url) ? ev.page_url : BASE + ev.page_url;
++    return BASE + 'pages/event.html?e=' + encodeURIComponent(ev.slug);
++  }
+   function setText(el, value) { if (el && value != null) el.textContent = value; }
+   // Replace only the leading text of a button/badge, keeping its icon markup.
+   function setLeadText(el, value) {
+@@ -37,14 +40,14 @@
+     if (node) node.textContent = node.textContent.replace(/\S(?:[\s\S]*\S)?/, value);
+     else el.insertBefore(document.createTextNode(value + ' '), el.firstChild);
+   }
+-  function hasCard(ev, counts) { return (counts[ev.id] || 0) > 0; }
++  function hasCard(ev, counts) { return (counts[ev.id] || 0) > 0 || !!ev.page_url; }
+ 
+   // ---------------------------------------------------------------- cards
+   function fillCard(card, ev, counts) {
+     var img = card.querySelector('.ev-poster img');
+     if (img) { img.src = asset(ev.poster_url); img.alt = ev.title; }
+     setText(card.querySelector('.ev-status'), W.statusLabel(ev.status));
+-    setText(card.querySelector('.ev-tag'), W.seriesLabel(ev.series));
++    setText(card.querySelector('.ev-tag'), W.seriesLabel(ev.series, ev));
+     setText(card.querySelector('.ev-title'), ev.title);
+     setText(card.querySelector('.ev-venue span'), W.formatVenue(ev) || 'To Be Announced');
+     setText(card.querySelector('.ev-date span'), W.formatDate(ev) || 'Date TBA');
+@@ -87,7 +90,7 @@
+     var badge = card.querySelector('.status-badge');
+     if (badge) setLeadText(badge, ev.status === 'live' ? 'Live Now' : ev.status === 'completed' ? 'Event Ended' : 'Upcoming');
+     if (badge) badge.classList.toggle('is-live', ev.status === 'live');
+-    setText(card.querySelector('.series-label'), W.seriesLabel(ev.series));
++    setText(card.querySelector('.series-label'), W.seriesLabel(ev.series, ev));
+     setText(card.querySelector('h2'), ev.title);
+     var desc = card.querySelector('.upcoming-description');
+     if (ev.description && desc) desc.innerHTML = esc(ev.description).replace(/\n/g, '<br>');
+@@ -110,14 +113,22 @@
+     setText(left, leftLabel);
+     setText(section.querySelector('.eu-title'), ev.title);
+     var values = section.querySelectorAll('.eu-value');
+-    setText(values[0], W.formatDate(ev) || 'TBA');
++    setText(values[0], (opts && opts.dateText ? opts.dateText(ev) : W.formatDate(ev)) || 'TBA');
+     setText(values[1], W.formatTime(ev) || 'TBA');
+     setText(values[2], W.formatVenue(ev) || 'TBA');
+     var cta = section.querySelector('.eu-cta');
+-    if (!cta) return;
++    if (!cta) {
++      // Template band without a button: add one only when there is a card to show.
++      if (!(hasCard(ev, counts) || ev.status === 'live') || (opts && opts.cta)) return;
++      cta = document.createElement('a');
++      var right = section.querySelector('.eu-right') || section;
++      right.appendChild(cta);
++    }
+     if (opts && opts.cta) { opts.cta(cta); return; }
+     if (hasCard(ev, counts) || ev.status === 'live') {
+       linkButton(cta, eventUrl(ev), ev.status === 'live' ? 'Live Fight Card' : ev.status === 'completed' ? 'View Results' : 'View Fight Card', 'eu-cta');
++    } else if (section.classList.contains('eu-live')) {
++      cta.remove();
+     } else {
+       var span = document.createElement('span');
+       span.className = 'eu-cta';
+@@ -150,6 +161,82 @@
+       '</article>';
+   }
+ 
++  function upcomingEvents(events) {
++    var rank = { live: 0, scheduled: 1, announced: 2 };
++    return events.filter(function (e) { return e.status in rank; }).sort(function (a, b) {
++      if (rank[a.status] !== rank[b.status]) return rank[a.status] - rank[b.status];
++      var ta = a.starts_at ? Date.parse(a.starts_at) : Infinity, tb = b.starts_at ? Date.parse(b.starts_at) : Infinity;
++      return ta - tb;
++    });
++  }
++
++  var NBSP = '\u00a0';
++  function fillMeta(meta, value, sub) {
++    if (!meta) return;
++    setText(meta.querySelector('.wds-ue-value'), value);
++    setText(meta.querySelector('.wds-ue-sub'), sub || NBSP);
++  }
++
++  // Home: <div class="wds-ue-list"> of <article class="wds-ue-event">
++  function fillUeEvent(article, ev, counts) {
++    setText(article.querySelector('.wds-ue-series'), W.seriesLabel(ev.series, ev));
++    var linked = hasCard(ev, counts) || ev.status === 'live';
++    var title = article.querySelector('.wds-ue-title');
++    if (title) {
++      if (linked) title.innerHTML = '<a href="' + esc(eventUrl(ev)) + '">' + esc(ev.title) + '</a>';
++      else title.textContent = ev.title;
++    }
++    var desc = article.querySelector('.wds-ue-desc');
++    if (desc) { desc.textContent = ev.description || ''; desc.hidden = !ev.description; }
++    var link = article.querySelector('.wds-ue-link');
++    if (linked) {
++      if (!link) {
++        link = document.createElement('a');
++        link.className = 'wds-ue-link';
++        (article.querySelector('.wds-ue-info') || article).appendChild(link);
++      }
++      link.href = eventUrl(ev);
++      link.innerHTML = esc(ev.status === 'live' ? 'Live Fight Card' : ev.status === 'completed' ? 'View Results' : 'View Fight Card') + ' <span aria-hidden="true">›</span>';
++    } else if (link) {
++      link.remove();
++    }
++    var metas = article.querySelectorAll('.wds-ue-meta');
++    var d = W.dateParts(ev);
++    fillMeta(metas[0], d.value, d.sub);
++    var time = W.formatTime(ev);
++    fillMeta(metas[1], time || 'TBA', time ? 'Onwards' : '');
++    fillMeta(metas[2], ev.venue || 'TBA', ev.city || '');
++    article.setAttribute('data-wds-event', ev.slug);
++    return article;
++  }
++
++  function renderUeList(listEl, list, counts) {
++    var template = listEl.__wdsTemplate || (listEl.__wdsTemplate = listEl.querySelector('.wds-ue-event'));
++    if (!template || !list.length) return;
++    var frag = document.createDocumentFragment();
++    list.forEach(function (ev) { frag.appendChild(fillUeEvent(template.cloneNode(true), ev, counts)); });
++    listEl.innerHTML = '';
++    listEl.appendChild(frag);
++  }
++
++  // Events page: one <section class="event-upcoming eu-live"> band per upcoming event
++  function renderEuBands(list, counts) {
++    var bands = Array.prototype.slice.call(document.querySelectorAll('.event-upcoming.eu-live'));
++    if (!bands.length || !list.length) return;
++    var holder = window.__wdsEuTemplate || (window.__wdsEuTemplate = bands[0].cloneNode(true));
++    var anchor = bands[0];
++    var frag = document.createDocumentFragment();
++    list.forEach(function (ev) {
++      var band = holder.cloneNode(true);
++      band.className = 'event-upcoming eu-live';
++      fillEventsUpcoming(band, ev, counts, { dateText: W.dateText });
++      band.setAttribute('data-wds-event', ev.slug);
++      frag.appendChild(band);
++    });
++    anchor.parentNode.insertBefore(frag, anchor);
++    bands.forEach(function (b) { b.remove(); });
++  }
++
+   function latest(events) {
+     return events.filter(function (e) { return e.status === 'completed' && e.event_date; })
+       .sort(function (a, b) { return a.event_date < b.event_date ? 1 : -1; })[0] || null;
+@@ -157,6 +244,11 @@
+ 
+   // ---------------------------------------------------------------- pages
+   function homePage(events, counts) {
++    var ueList = document.querySelector('.wds-ue-list');
++    if (ueList) {
++      var coming = upcomingEvents(events);
++      renderUeList(ueList, coming.length ? coming : [latest(events)].filter(Boolean), counts);
++    }
+     var upcoming = document.querySelector('.upcoming-section .upcoming-card');
+     var ev = W.featured(events);
+     // Nothing announced yet: the card shows the latest event and its results.
+@@ -170,17 +262,27 @@
+   }
+ 
+   function eventsPage(events, counts) {
+-    var block = document.querySelector('.event-upcoming');
+     var ev = W.featured(events);
+-    var shown = ev || latest(events);
+-    if (block && shown) fillEventsUpcoming(block, shown, counts, ev ? null : {
+-      leftLabel: function () { return 'Latest'; },
+-    });
++    if (document.querySelector('.event-upcoming.eu-live')) {
++      var coming = upcomingEvents(events);
++      renderEuBands(coming.length ? coming : [latest(events)].filter(Boolean), counts);
++    } else {
++      // Original single "Upcoming" panel layout.
++      var block = document.querySelector('.event-upcoming');
++      var shown = ev || latest(events);
++      if (block && shown) fillEventsUpcoming(block, shown, counts, ev ? null : {
++        leftLabel: function () { return 'Latest'; },
++      });
++    }
+     var grid = document.querySelector('.season-section .ev-grid');
+     if (grid) {
+       var year = new Date().getFullYear();
++      var gridSection = grid.closest('.season-section');
++      var gridTitle = gridSection && gridSection.querySelector('.season-title');
++      var pastOnly = !!gridTitle && /past/i.test(gridTitle.textContent);
+       var season = events.filter(function (e) {
+         if (e === ev || e.status === 'cancelled') return false;
++        if (pastOnly) return e.status === 'completed';
+         var y = e.event_date ? +e.event_date.slice(0, 4) : year;
+         return y === year || e.status !== 'completed';
+       });
+diff --git a/pages/rankings.html b/pages/rankings.html
+index 9683312..899d97f 100644
+--- a/pages/rankings.html
++++ b/pages/rankings.html
+@@ -328,7 +328,7 @@
+   <!-- Main Content -->
+   <div class="container">
+     <div class="info-section">
+-      <strong>📊 ELO Rating System:</strong> Rankings calculated using the professional ELO algorithm. Beating higher-rated fighters gains more points. Losses to top contenders cost less rating.
++      <strong>📊 WDS Ranking Score:</strong> Score = (Win% × 0.7 + Win Method Weight × 0.3) × √(total fights). Every win adds a weight for how it was won — earlier finishes count more (KO/TKO R1 0.75 · R2 0.70 · R3 0.65, Submission R1 0.70 · R2 0.65 · R3 0.60, Decision 0.55). Only official, finalized results count.
+     </div>
+ 
+     <!-- Division Selector -->
+@@ -439,81 +439,46 @@
+ 
+     let divisions = emptyDivisions();
+ 
+-    class ELOSystem {
+-      constructor(k = 32, initialRating = 1500) {
+-        this.K = k;
+-        this.initialRating = initialRating;
+-        this.ratings = {};
+-      }
+-
+-      getOrCreateRating(fighter) {
+-        if (!this.ratings[fighter]) {
+-          this.ratings[fighter] = this.initialRating;
+-        }
+-        return this.ratings[fighter];
+-      }
+-
+-      calculateExpectedScore(ratingA, ratingB) {
+-        return 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
+-      }
+-
+-      updateRating(fighter, opponentRating, actualScore) {
+-        const currentRating = this.getOrCreateRating(fighter);
+-        const expectedScore = this.calculateExpectedScore(currentRating, opponentRating);
+-        const newRating = currentRating + this.K * (actualScore - expectedScore);
+-        this.ratings[fighter] = Math.round(newRating);
+-        return this.ratings[fighter];
+-      }
+-
+-      processMatch(fighter1, fighter2, winner) {
+-        const rating1 = this.getOrCreateRating(fighter1);
+-        const rating2 = this.getOrCreateRating(fighter2);
+-
+-        if (winner === fighter1) {
+-          this.updateRating(fighter1, rating2, 1);
+-          this.updateRating(fighter2, rating1, 0);
+-        } else {
+-          this.updateRating(fighter1, rating2, 0);
+-          this.updateRating(fighter2, rating1, 1);
+-        }
+-      }
++    // Committee formula: (Win% × 0.7 + sum of win method weights × 0.3) × √(total fights)
++    function rankingScore(f) {
++      const total = f.wins + f.losses + (f.draws || 0);
++      if (!total) return 0;
++      return ((f.wins / total) * 100 * 0.7 + f.methodPoints * 0.3) * Math.sqrt(total);
++    }
++    function byScore(a, b) {
++      return (b.score - a.score) || (b.wins - a.wins) || (a.order - b.order);
+     }
+ 
+-    // Offline fallback: the original in-page calculation from the list above.
++    // Offline fallback: the saved list above (its win methods were not recorded,
++    // so each win counts as a decision, 0.55 — the same as in the database).
++    const DECISION_WEIGHT = 0.55;
+     function divisionsFromFights() {
+       const d = emptyDivisions();
+-      const elo = new ELOSystem(32, 1500);
+-      fights.forEach(fight => {
+-        elo.processMatch(fight.fighter1, fight.fighter2, fight.winner);
+-      });
+-
+       const fighterStats = {};
++      let order = 0;
+       fights.forEach(fight => {
+-        if (!fighterStats[fight.fighter1]) {
+-          fighterStats[fight.fighter1] = { name: fight.fighter1, division: fight.division, wins: 0, losses: 0, elo: elo.ratings[fight.fighter1] };
+-        }
+-        if (!fighterStats[fight.fighter2]) {
+-          fighterStats[fight.fighter2] = { name: fight.fighter2, division: fight.division, wins: 0, losses: 0, elo: elo.ratings[fight.fighter2] };
+-        }
+-        if (fight.winner === fight.fighter1) {
+-          fighterStats[fight.fighter1].wins++;
+-          fighterStats[fight.fighter2].losses++;
+-        } else {
+-          fighterStats[fight.fighter2].wins++;
+-          fighterStats[fight.fighter1].losses++;
+-        }
++        [fight.fighter1, fight.fighter2].forEach(name => {
++          if (!fighterStats[name]) {
++            fighterStats[name] = { name: name, division: fight.division, wins: 0, losses: 0, draws: 0, methodPoints: 0, order: ++order };
++          }
++        });
++        const loser = fight.winner === fight.fighter1 ? fight.fighter2 : fight.fighter1;
++        fighterStats[fight.winner].wins++;
++        fighterStats[fight.winner].methodPoints += DECISION_WEIGHT;
++        fighterStats[loser].losses++;
+       });
+ 
+       Object.keys(fighterStats).forEach(fighterName => {
+         const fighter = fighterStats[fighterName];
+         fighter.record = `${fighter.wins}-${fighter.losses}`;
++        fighter.score = rankingScore(fighter);
+         if (d[fighter.division]) {
+           d[fighter.division].fighters.push(fighter);
+         }
+       });
+ 
+       Object.keys(d).forEach(key => {
+-        d[key].fighters.sort((a, b) => b.elo - a.elo);
++        d[key].fighters.sort(byScore);
+       });
+       return d;
+     }
+@@ -530,8 +495,9 @@
+           division: r.division_key,
+           wins: r.wins,
+           losses: r.losses,
+-          elo: r.elo,
++          score: Number(r.score),
+           rank: r.division_rank,
++          order: r.overall_rank,
+           record: r.draws ? `${r.wins}-${r.losses}-${r.draws}` : `${r.wins}-${r.losses}`
+         });
+       });
+@@ -545,7 +511,7 @@
+       d.all.fighters = Object.keys(d)
+         .filter(key => key !== 'all')
+         .reduce((acc, key) => acc.concat(d[key].fighters), [])
+-        .sort((a, b) => b.elo - a.elo);
++        .sort(byScore);
+ 
+       Object.keys(d).forEach(key => {
+         if (key !== 'all' && d[key].fighters.length > 0) {
+@@ -555,17 +521,21 @@
+       return d;
+     }
+ 
+-    function getRatingClass(elo) {
+-      if (elo >= 1700) return 'elo-elite';
+-      if (elo >= 1550) return 'elo-strong';
++    // Display tiers for the score badge.
++    function getRatingClass(score) {
++      if (score >= 100) return 'elo-elite';
++      if (score >= 60) return 'elo-strong';
+       return 'elo-developing';
+     }
++    function formatScore(score) {
++      return Number(score).toFixed(2);
++    }
+ 
+     function createRankingTable(division) {
+-      let table = '<table class="rankings-table"><thead><tr><th style="width: 50px">Rank</th><th>Fighter</th><th style="width: 100px">Record</th><th style="width: 120px">ELO</th></tr></thead><tbody>';
++      let table = '<table class="rankings-table"><thead><tr><th style="width: 50px">Rank</th><th>Fighter</th><th style="width: 100px">Record</th><th style="width: 120px">Score</th></tr></thead><tbody>';
+ 
+       division.fighters.forEach((fighter, index) => {
+-        const ratingClass = getRatingClass(fighter.elo);
++        const ratingClass = getRatingClass(fighter.score);
+         table += `<tr>
+           <td class="rank-num">${index + 1}</td>
+           <td>
+@@ -575,7 +545,7 @@
+             </div>
+           </td>
+           <td>${fighter.record}</td>
+-          <td><span class="elo-rating ${ratingClass}">${fighter.elo}</span></td>
++          <td><span class="elo-rating ${ratingClass}">${formatScore(fighter.score)}</span></td>
+         </tr>`;
+       });
+ 
+@@ -608,14 +578,14 @@
+ 
+         let championSection = '';
+         if (division.champion) {
+-          const championElo = division.fighters[0].elo;
+-          const championClass = getRatingClass(championElo);
++          const championScore = division.fighters[0].score;
++          const championClass = getRatingClass(championScore);
+           championSection = `
+             <div class="champion">
+               <div class="champion-badge">CHAMPION</div>
+               <div class="champion-info">
+                 <h3>${division.champion}</h3>
+-                <p><span class="elo-rating ${championClass}">${championElo}</span></p>
++                <p><span class="elo-rating ${championClass}">${formatScore(championScore)}</span></p>
+               </div>
+             </div>
+           `;
+diff --git a/supabase/README.md b/supabase/README.md
+index e01a699..9eefe6a 100644
+--- a/supabase/README.md
++++ b/supabase/README.md
+@@ -30,12 +30,38 @@ submits or the referee records a stoppage) `→ final` (management clicks **Fina
+ **Only final results** appear on the website and count for rankings. An admin can
+ **Reopen** a final result to correct it; rankings recompute automatically either way.
+ 
++## Ranking formula (committee, October 2026)
++
++```
++Score = (Win% × 0.7 + Win Method Weight × 0.3) × √(total fights)
++```
++
++- **Win%** = wins ÷ (wins + losses + draws) × 100. No contests are not counted.
++- **Win Method Weight** = the weights of all the fighter's wins **added together**.
++- Committee check: 6 W / 3 L / 1 D with win weights totalling 4.05 →
++  (60 × 0.7 + 4.05 × 0.3) × √10 = **136.6578**.
++- Fighters are ranked by Score, highest first, within each division. Ties: more wins first.
++
++| Win method | R1 | R2 | R3 | Source |
++| --- | --- | --- | --- | --- |
++| KO / TKO / referee stoppage | 0.75 | 0.70 | 0.65 | committee |
++| Submission (incl. verbal) | 0.70 | 0.65 | 0.60 | committee |
++| Unanimous decision | 0.55 (any round) | | | committee |
++| Doctor / corner stoppage | 0.75 | 0.70 | 0.65 | **to confirm** (treated as a stoppage) |
++| Split / majority decision | 0.55 | | | **to confirm** (same as unanimous) |
++| Disqualification | 0.55 | | | **to confirm** |
++
++Finishes in round 4 or 5 use the round-3 weight. Management can change any weight in
++the admin dashboard (Rankings tab); rankings recalculate immediately.
++
+ ## Deploy (in this order)
+ 
+ 1. **Database** — Supabase dashboard → SQL Editor, run in order:
+    1. `supabase/migrations/20261001000100_wds_core_schema.sql`
+    2. `supabase/migrations/20261001000200_wds_scoring_and_rankings.sql`
+    3. `supabase/migrations/20261001000300_wds_seed_current_content.sql`
++   4. `supabase/migrations/20261008000400_wds_committee_ranking_formula.sql`
++   5. `supabase/migrations/20261008000500_wds_upcoming_events_oct.sql`
+ 
+    Safe on the existing project: tables from the old dashboard/ScoreHUB schema with
+    the same names are renamed to `legacy_<name>_<date>` (kept, never dropped). All
+@@ -77,6 +103,13 @@ submits or the referee records a stoppage) `→ final` (management clicks **Fina
+   `reset_bout`, `admin_recompute_rankings`), the ELO ranking engine (same algorithm
+   as the Rankings page, final results only), `public_rankings` view, Realtime
+   publication, `bootstrap_admin`.
++- `…0400_wds_committee_ranking_formula.sql` — `ranking_method_weights` table (editable by
++  management, readable by everyone), committee Score in `fighter_rankings` / `public_rankings`,
++  automatic recalculation when a result, its round or a weight changes.
++- `…0500_wds_upcoming_events_oct.sql` — `events.page_url` (custom event page) and
++  `events.series_label`; Rising Star 8 (24–25 Oct, Fit & Fight Club, Wagholi, Pune, 8 AM)
++  and Fight Night 19 (12 Dec, CIDCO Exhibition Ground, Vashi, 5 PM). Never overwrites
++  details already changed in the database.
+ - `…0300_wds_seed_current_content.sql` — the five past events, *WDS Rising Star 8*
+   as Announced (no date), and the 34 fights from the Rankings page as final results
+   under an unlisted "historical import" event.
+@@ -90,10 +123,11 @@ submits or the referee records a stoppage) `→ final` (management clicks **Fina
+ | `css/wds-live.css` | **new** — fight-card rows and the "View Fight Card" button (site palette) |
+ | `pages/event.html` | **new** — event status, details, fight card, final results |
+ | `index.html`, `pages/events.html` | +4 script tags, +1 stylesheet (markup untouched) |
+-| `pages/rankings.html` | data now from `public_rankings`; original list kept as offline fallback; same render code |
++| `pages/rankings.html` | data from `public_rankings`, ranked by the committee Score (column "Score" instead of "ELO"); saved list kept as offline fallback using the same formula |
+ | `js/main.js` | event filter looks up cards on click (so live cards filter too) |
+ | `admin-dashboard.html` | forms for the new workflow; inline script → `js/admin-dashboard.js` |
+-| `js/admin-dashboard.js` | rewritten for the shared schema (edit events, finalize/reopen, officials, read-only scorecards) |
++| `js/admin-dashboard.js` | rewritten for the shared schema (edit events, finalize/reopen, officials, read-only scorecards); Rankings tab shows Score, Win %, method points and a win-method weight editor |
++| `js/wds-live.js` | also fills the Home "Upcoming Events" list and the Events page upcoming bands (one per announced/scheduled/live event) |
+ 
+ With the seed data, Home, Events and Rankings render **identical HTML** to the
+ previous static pages; if the database is unreachable the static content stays.
+diff --git a/supabase/migrations/20261001000200_wds_scoring_and_rankings.sql b/supabase/migrations/20261001000200_wds_scoring_and_rankings.sql
+index 50f8848..05bff1b 100644
+--- a/supabase/migrations/20261001000200_wds_scoring_and_rankings.sql
++++ b/supabase/migrations/20261001000200_wds_scoring_and_rankings.sql
+@@ -378,6 +378,14 @@ end $$;
+ -- ratings rounded after every fight), computed from FINAL results only, in
+ -- chronological order. A full recompute keeps corrections exact.
+ -- -----------------------------------------------------------------------------
++-- Skipped when migration 4 (committee formula) has already replaced it.
++do $wrap$
++begin
++  if to_regclass('public.ranking_method_weights') is not null then
++    raise notice 'recompute_rankings: committee formula already installed (migration 4) - kept';
++    return;
++  end if;
++  execute $fn$
+ create or replace function public.recompute_rankings()
+ returns int language plpgsql security definer set search_path = public as $$
+ declare
+@@ -482,7 +490,9 @@ begin
+ 
+   select count(*) into n from public.fighter_rankings;
+   return n;
+-end $$;
++end $$
++  $fn$;
++end $wrap$;
+ 
+ -- Management "Recalculate" button (rankings also update automatically).
+ create or replace function public.admin_recompute_rankings()
+@@ -564,12 +574,18 @@ create trigger roster_rankings_flush after insert or update or delete on public.
+   for each statement execute function public.rankings_flush();
+ 
+ -- Public rankings read model.
++do $wrap$
++begin
++  if to_regclass('public.ranking_method_weights') is not null then return; end if;
++  execute $v$
+ create or replace view public.public_rankings as
+ select fr.fighter_id, f.name, f.nickname, f.photo_url, f.country,
+        fr.division_key, fr.division_name, fr.elo, fr.wins, fr.losses, fr.draws, fr.no_contests,
+        fr.fights, fr.division_rank, fr.overall_rank, fr.last_fight_on, fr.updated_at
+   from public.fighter_rankings fr
+-  join public.fighters f on f.id = fr.fighter_id;
++  join public.fighters f on f.id = fr.fighter_id
++  $v$;
++end $wrap$;
+ grant select on public.public_rankings to anon, authenticated;
+ 
+ -- -----------------------------------------------------------------------------
+diff --git a/supabase/migrations/20261008000400_wds_committee_ranking_formula.sql b/supabase/migrations/20261008000400_wds_committee_ranking_formula.sql
+new file mode 100644
+index 0000000..a583b13
+--- /dev/null
++++ b/supabase/migrations/20261008000400_wds_committee_ranking_formula.sql
+@@ -0,0 +1,285 @@
++-- =============================================================================
++-- WDS unified data platform — 4/4: committee ranking formula (October 2026)
++--
++--   Score = (Win% × 0.7 + Win Method Weight × 0.3) × √(total fights)
++--
++--   Win%               wins ÷ (wins + losses + draws) × 100
++--   Win Method Weight  SUM of the weights of every win (table below)
++--   total fights       wins + losses + draws   (no contests are not counted)
++--
++-- Committee example: 10 bouts, 6 wins / 3 losses / 1 draw, win weights
++-- totalling 4.05  ->  (60 × 0.7 + 4.05 × 0.3) × √10 = 136.6578291
++--
++-- Only FINALIZED results count, exactly as before. Fighters are ranked by
++-- Score (highest first) within their division. The weights live in a table
++-- that management can edit from the admin dashboard; every edit recalculates
++-- the rankings. Run after migrations 1–3. Safe to re-run.
++-- =============================================================================
++
++-- -----------------------------------------------------------------------------
++-- 1. Win method weights
++--    round_no 1..3 = the round the fight ended in (round 4/5 finishes use the
++--    round-3 weight); round_no 0 = any round (decisions).
++--    confirmed = true  -> taken from the committee sheet
++--    confirmed = false -> assumption for a method the sheet does not list;
++--                         shown as "to confirm" in the dashboard.
++-- -----------------------------------------------------------------------------
++create table if not exists public.ranking_method_weights (
++  result_type text    not null,
++  round_no    int     not null default 0 check (round_no between 0 and 3),
++  weight      numeric(6,4) not null check (weight >= 0 and weight <= 10),
++  confirmed   boolean not null default false,
++  note        text,
++  updated_at  timestamptz not null default now(),
++  updated_by  uuid references public.profiles(id) on delete set null,
++  primary key (result_type, round_no),
++  constraint ranking_weights_known_type check (result_type in (
++    'DECISION_UNANIMOUS','DECISION_SPLIT','DECISION_MAJORITY',
++    'KO_HEAD','KO_BODY','TKO','DOCTOR_STOPPAGE','CORNER_STOPPAGE',
++    'SUBMISSION','RNC','DQ'))
++);
++comment on table public.ranking_method_weights is 'wds:v1 committee win-method weights for the ranking score';
++
++insert into public.ranking_method_weights (result_type, round_no, weight, confirmed, note) values
++  -- Knockout / TKO / Referee stoppage (committee)
++  ('KO_HEAD', 1, 0.75, true,  'Committee: KO/TKO/referee stoppage R1'),
++  ('KO_HEAD', 2, 0.70, true,  'Committee: KO/TKO/referee stoppage R2'),
++  ('KO_HEAD', 3, 0.65, true,  'Committee: KO/TKO/referee stoppage R3'),
++  ('KO_BODY', 1, 0.75, true,  'Committee: KO/TKO/referee stoppage R1'),
++  ('KO_BODY', 2, 0.70, true,  'Committee: KO/TKO/referee stoppage R2'),
++  ('KO_BODY', 3, 0.65, true,  'Committee: KO/TKO/referee stoppage R3'),
++  ('TKO',     1, 0.75, true,  'Committee: KO/TKO/referee stoppage R1'),
++  ('TKO',     2, 0.70, true,  'Committee: KO/TKO/referee stoppage R2'),
++  ('TKO',     3, 0.65, true,  'Committee: KO/TKO/referee stoppage R3'),
++  -- Submission (committee); verbal submission is a submission
++  ('SUBMISSION', 1, 0.70, true, 'Committee: submission R1'),
++  ('SUBMISSION', 2, 0.65, true, 'Committee: submission R2'),
++  ('SUBMISSION', 3, 0.60, true, 'Committee: submission R3'),
++  ('RNC',        1, 0.70, true, 'Verbal submission = submission R1'),
++  ('RNC',        2, 0.65, true, 'Verbal submission = submission R2'),
++  ('RNC',        3, 0.60, true, 'Verbal submission = submission R3'),
++  -- Unanimous decision (committee)
++  ('DECISION_UNANIMOUS', 0, 0.55, true, 'Committee: unanimous decision'),
++  -- Not on the committee sheet — assumptions until confirmed
++  ('DOCTOR_STOPPAGE', 1, 0.75, false, 'Assumed: treated as a stoppage (KO/TKO table)'),
++  ('DOCTOR_STOPPAGE', 2, 0.70, false, 'Assumed: treated as a stoppage (KO/TKO table)'),
++  ('DOCTOR_STOPPAGE', 3, 0.65, false, 'Assumed: treated as a stoppage (KO/TKO table)'),
++  ('CORNER_STOPPAGE', 1, 0.75, false, 'Assumed: treated as a stoppage (KO/TKO table)'),
++  ('CORNER_STOPPAGE', 2, 0.70, false, 'Assumed: treated as a stoppage (KO/TKO table)'),
++  ('CORNER_STOPPAGE', 3, 0.65, false, 'Assumed: treated as a stoppage (KO/TKO table)'),
++  ('DECISION_SPLIT',    0, 0.55, false, 'Assumed: same as unanimous decision'),
++  ('DECISION_MAJORITY', 0, 0.55, false, 'Assumed: same as unanimous decision'),
++  ('DQ',                0, 0.55, false, 'Assumed: same as unanimous decision')
++on conflict (result_type, round_no) do nothing;
++
++-- Weight of one win. Finishes after round 3 use the round-3 weight; a missing
++-- round uses round 3; a method with no weight row adds 0.
++create or replace function public.wds_win_weight(p_result_type text, p_end_round int)
++returns numeric language sql stable security definer set search_path = public as $$
++  select coalesce(
++    (select weight from public.ranking_method_weights
++      where result_type = p_result_type
++        and round_no = least(greatest(coalesce(p_end_round, 3), 1), 3)),
++    (select weight from public.ranking_method_weights
++      where result_type = p_result_type and round_no = 0),
++    0)
++$$;
++
++-- -----------------------------------------------------------------------------
++-- 2. Rankings table: score and its parts
++-- -----------------------------------------------------------------------------
++alter table public.fighter_rankings add column if not exists score         numeric(12,4) not null default 0;
++alter table public.fighter_rankings add column if not exists win_pct       numeric(7,3)  not null default 0;
++alter table public.fighter_rankings add column if not exists method_points numeric(10,4) not null default 0;
++alter table public.fighter_rankings alter column elo drop not null;
++create index if not exists fighter_rankings_score_idx on public.fighter_rankings(division_key, score desc);
++
++-- -----------------------------------------------------------------------------
++-- 3. Ranking engine (committee formula). ELO is still stored for reference
++--    but no longer decides the order.
++-- -----------------------------------------------------------------------------
++create or replace function public.recompute_rankings()
++returns int language plpgsql security definer set search_path = public as $$
++declare
++  r record;
++  ra int; rb int; sa float8; ea float8; eb float8;
++  n int;
++  seq int := 0;
++begin
++  -- first_seq = order in which a fighter first appears (blue corner before
++  -- red), used to break exact score ties consistently.
++  create temp table if not exists _elo (fighter_id uuid primary key, elo int not null, first_seq int not null) on commit drop;
++  truncate _elo;
++
++  for r in
++    select b.blue_fighter_id as a, b.red_fighter_id as c, b.winner_id
++      from public.bouts b
++      join public.events e on e.id = b.event_id
++     where b.result_status = 'final'
++       and b.result_type <> 'NO_CONTEST'
++       and b.blue_fighter_id is not null and b.red_fighter_id is not null
++     order by coalesce(e.event_date, b.bout_date, b.completed_at::date) nulls last,
++              e.starts_at nulls last, e.created_at, b.bout_number, b.completed_at nulls last, b.id
++  loop
++    insert into _elo values (r.a, 1500, seq + 1), (r.c, 1500, seq + 2) on conflict do nothing;
++    seq := seq + 2;
++    select elo into ra from _elo where fighter_id = r.a;
++    select elo into rb from _elo where fighter_id = r.c;
++    sa := case when r.winner_id = r.a then 1 when r.winner_id = r.c then 0 else 0.5 end;
++    ea := 1 / (1 + power(10::float8, (rb - ra)::float8 / 400));
++    eb := 1 / (1 + power(10::float8, (ra - rb)::float8 / 400));
++    update _elo set elo = floor(ra + 32 * (sa - ea) + 0.5)::int       where fighter_id = r.a;
++    update _elo set elo = floor(rb + 32 * ((1 - sa) - eb) + 0.5)::int where fighter_id = r.c;
++  end loop;
++
++  with fights as (
++    select b.id, f.fid,
++           b.winner_id, b.result_type, b.end_round,
++           coalesce(e.event_date, b.bout_date, b.completed_at::date) as fought_on,
++           e.starts_at, e.created_at as ev_created, b.bout_number,
++           coalesce(nullif(b.weight_class, ''), nullif(ef.weight_class, ''), nullif(fx.weight_class, '')) as division
++      from public.bouts b
++      join public.events e on e.id = b.event_id
++      cross join lateral (values (b.blue_fighter_id), (b.red_fighter_id)) as f(fid)
++      join public.fighters fx on fx.id = f.fid
++      left join public.event_fighters ef on ef.event_id = b.event_id and ef.fighter_id = f.fid
++     where b.result_status = 'final'
++       and b.blue_fighter_id is not null and b.red_fighter_id is not null
++  ),
++  stats as (
++    select fid,
++           count(*) filter (where winner_id = fid)                                       as wins,
++           count(*) filter (where winner_id is not null and winner_id <> fid)            as losses,
++           count(*) filter (where winner_id is null and result_type <> 'NO_CONTEST')     as draws,
++           count(*) filter (where result_type = 'NO_CONTEST')                            as ncs,
++           coalesce(sum(public.wds_win_weight(result_type, end_round)) filter (where winner_id = fid), 0) as method_points,
++           max(fought_on)                                                                as last_on,
++           (array_agg(division order by fought_on desc nulls last, starts_at desc nulls last,
++                                        ev_created desc, bout_number desc)
++              filter (where division is not null))[1]                                    as division
++      from fights group by fid
++  ),
++  scored as (
++    select s.fid, coalesce(s.division, 'Unclassified') as division_name,
++           public.wds_division_key(s.division) as division_key,
++           x.elo, coalesce(x.first_seq, 2147483647) as first_seq,
++           s.wins, s.losses, s.draws, s.ncs, s.last_on, s.method_points, fx.name,
++           (s.wins + s.losses + s.draws) as counted,
++           case when s.wins + s.losses + s.draws = 0 then 0
++                else 100.0 * s.wins / (s.wins + s.losses + s.draws) end as win_pct
++      from stats s
++      join public.fighters fx on fx.id = s.fid
++      left join _elo x on x.fighter_id = s.fid
++  ),
++  with_score as (
++    select *, ((win_pct::float8 * 0.7 + method_points::float8 * 0.3) * sqrt(counted::float8)) as score
++      from scored
++  ),
++  ranked as (
++    select *,
++      row_number() over (partition by division_key order by score desc, wins desc, first_seq, name) as division_rank,
++      row_number() over (order by score desc, wins desc, first_seq, name)                          as overall_rank
++    from with_score
++  )
++  insert into public.fighter_rankings as fr
++    (fighter_id, division_key, division_name, elo, wins, losses, draws, no_contests, fights,
++     division_rank, overall_rank, last_fight_on, score, win_pct, method_points, updated_at)
++  select fid, division_key, division_name, elo, wins, losses, draws, ncs, wins + losses + draws + ncs,
++         division_rank, overall_rank, last_on, round(score::numeric, 4), round(win_pct::numeric, 3),
++         method_points, now()
++    from ranked
++  on conflict (fighter_id) do update set
++    division_key = excluded.division_key, division_name = excluded.division_name, elo = excluded.elo,
++    wins = excluded.wins, losses = excluded.losses, draws = excluded.draws,
++    no_contests = excluded.no_contests, fights = excluded.fights,
++    division_rank = excluded.division_rank, overall_rank = excluded.overall_rank,
++    last_fight_on = excluded.last_fight_on, score = excluded.score, win_pct = excluded.win_pct,
++    method_points = excluded.method_points, updated_at = now()
++  where (fr.division_key, fr.division_name, fr.elo, fr.wins, fr.losses, fr.draws, fr.no_contests,
++         fr.division_rank, fr.overall_rank, fr.last_fight_on, fr.score, fr.win_pct, fr.method_points)
++        is distinct from
++        (excluded.division_key, excluded.division_name, excluded.elo, excluded.wins, excluded.losses,
++         excluded.draws, excluded.no_contests, excluded.division_rank, excluded.overall_rank,
++         excluded.last_fight_on, excluded.score, excluded.win_pct, excluded.method_points);
++
++  delete from public.fighter_rankings fr
++   where not exists (
++     select 1 from public.bouts b
++      where b.result_status = 'final'
++        and b.blue_fighter_id is not null and b.red_fighter_id is not null
++        and fr.fighter_id in (b.blue_fighter_id, b.red_fighter_id));
++
++  select count(*) into n from public.fighter_rankings;
++  return n;
++end $$;
++revoke execute on function public.recompute_rankings() from public, anon, authenticated;
++
++-- -----------------------------------------------------------------------------
++-- 4. Recalculate automatically when anything the formula uses changes
++-- -----------------------------------------------------------------------------
++-- The finishing round now matters too.
++drop trigger if exists bouts_rankings_dirty_upd on public.bouts;
++create trigger bouts_rankings_dirty_upd after update on public.bouts
++  for each row when (
++    (old.result_status = 'final' or new.result_status = 'final') and (
++      old.result_status is distinct from new.result_status
++      or old.winner_id is distinct from new.winner_id
++      or old.result_type is distinct from new.result_type
++      or old.end_round is distinct from new.end_round
++      or old.blue_fighter_id is distinct from new.blue_fighter_id
++      or old.red_fighter_id is distinct from new.red_fighter_id
++      or old.weight_class is distinct from new.weight_class
++      or old.bout_number is distinct from new.bout_number
++      or old.event_id is distinct from new.event_id))
++  execute function public.rankings_mark_dirty();
++
++create or replace function public.ranking_weights_touch()
++returns trigger language plpgsql as $$
++begin
++  new.updated_at := now();
++  new.updated_by := coalesce(auth.uid(), new.updated_by);
++  return new;
++end $$;
++drop trigger if exists ranking_weights_touch on public.ranking_method_weights;
++create trigger ranking_weights_touch before insert or update on public.ranking_method_weights
++  for each row execute function public.ranking_weights_touch();
++drop trigger if exists ranking_weights_dirty on public.ranking_method_weights;
++create trigger ranking_weights_dirty after insert or update or delete on public.ranking_method_weights
++  for each row execute function public.rankings_mark_dirty();
++drop trigger if exists ranking_weights_flush on public.ranking_method_weights;
++create trigger ranking_weights_flush after insert or update or delete on public.ranking_method_weights
++  for each statement execute function public.rankings_flush();
++
++-- -----------------------------------------------------------------------------
++-- 5. Access: the weights are public (transparency); management edits them.
++-- -----------------------------------------------------------------------------
++alter table public.ranking_method_weights enable row level security;
++drop policy if exists weights_select on public.ranking_method_weights;
++create policy weights_select on public.ranking_method_weights for select using (true);
++drop policy if exists weights_write on public.ranking_method_weights;
++create policy weights_write on public.ranking_method_weights for all
++  using (public.is_staff()) with check (public.is_staff());
++grant select on public.ranking_method_weights to anon, authenticated;
++grant insert, update, delete on public.ranking_method_weights to authenticated;
++revoke insert, update, delete on public.ranking_method_weights from anon;
++
++-- Public read model now carries the score and its parts (new columns at the end).
++create or replace view public.public_rankings as
++select fr.fighter_id, f.name, f.nickname, f.photo_url, f.country,
++       fr.division_key, fr.division_name, fr.elo, fr.wins, fr.losses, fr.draws, fr.no_contests,
++       fr.fights, fr.division_rank, fr.overall_rank, fr.last_fight_on, fr.updated_at,
++       fr.score, fr.win_pct, fr.method_points
++  from public.fighter_rankings fr
++  join public.fighters f on f.id = fr.fighter_id;
++grant select on public.public_rankings to anon, authenticated;
++
++do $$
++begin
++  if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
++     and not exists (select 1 from pg_publication_tables
++                      where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'ranking_method_weights') then
++    alter publication supabase_realtime add table public.ranking_method_weights;
++  end if;
++end $$;
++
++select public.recompute_rankings();
+diff --git a/supabase/migrations/20261008000500_wds_upcoming_events_oct.sql b/supabase/migrations/20261008000500_wds_upcoming_events_oct.sql
+new file mode 100644
+index 0000000..92bf1ca
+--- /dev/null
++++ b/supabase/migrations/20261008000500_wds_upcoming_events_oct.sql
+@@ -0,0 +1,38 @@
++-- =============================================================================
++-- WDS unified data platform — 5: upcoming events as published on 5 Oct 2026
++--
++-- * events.page_url      optional custom page for an event (e.g. the
++--                        hand-built Fight Night 19 fight card). Used for
++--                        "View Fight Card" links instead of pages/event.html.
++-- * events.series_label  optional label shown instead of the series name
++--                        (e.g. "Warriors Dream Series").
++-- * Rising Star 8 and Fight Night 19 details, matching the website.
++--
++-- Never overwrites details management has already changed in the database:
++-- RS8 is only updated while it still has no date; FN19 is only inserted.
++-- Run after migrations 1–4. Safe to re-run.
++-- =============================================================================
++
++alter table public.events add column if not exists page_url     text;
++alter table public.events add column if not exists series_label text;
++
++update public.events
++   set status      = 'announced',            -- becomes Scheduled automatically (date + time + venue)
++       event_date  = '2026-10-24',
++       end_date    = '2026-10-25',
++       start_time  = '08:00',
++       venue       = 'Fit & Fight Club',
++       city        = 'Wagholi, Pune',
++       description = 'The next generation of MMA warriors prepare for battle. Stay tuned for the ultimate showcase of rising talent.'
++ where slug = 'wds-rising-star-8'
++   and event_date is null
++   and status in ('draft', 'announced');
++
++insert into public.events
++  (slug, title, series, series_label, status, event_date, start_time, venue, city, description, page_url)
++values
++  ('wds-fight-night-19', 'WDS Fight Night 19', 'championship', 'Warriors Dream Series', 'announced',
++   '2026-12-12', '17:00', 'CIDCO Exhibition Ground', 'Vashi, Navi Mumbai',
++   'The warriors return for another night of high-intensity MMA action. Get ready for WDS Fight Night 19.',
++   'pages/wds-fight-night-19.html')
++on conflict (slug) do nothing;
+-- 
+2.43.0
+

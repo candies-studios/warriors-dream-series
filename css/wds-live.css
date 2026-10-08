@@ -112,3 +112,6 @@ a.eu-cta:hover { background: var(--red, #d7272a); color: #fff; }
   .wds-red { text-align: left; align-items: flex-start; }
   .wds-vs { font-size: 1.1rem; }
 }
+
+/* Events page upcoming bands: values read in capitals, as on the published page */
+.eu-live .eu-value { text-transform: uppercase; }

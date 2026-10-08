@@ -30,12 +30,38 @@ submits or the referee records a stoppage) `→ final` (management clicks **Fina
 **Only final results** appear on the website and count for rankings. An admin can
 **Reopen** a final result to correct it; rankings recompute automatically either way.
 
+## Ranking formula (committee, October 2026)
+
+```
+Score = (Win% × 0.7 + Win Method Weight × 0.3) × √(total fights)
+```
+
+- **Win%** = wins ÷ (wins + losses + draws) × 100. No contests are not counted.
+- **Win Method Weight** = the weights of all the fighter's wins **added together**.
+- Committee check: 6 W / 3 L / 1 D with win weights totalling 4.05 →
+  (60 × 0.7 + 4.05 × 0.3) × √10 = **136.6578**.
+- Fighters are ranked by Score, highest first, within each division. Ties: more wins first.
+
+| Win method | R1 | R2 | R3 | Source |
+| --- | --- | --- | --- | --- |
+| KO / TKO / referee stoppage | 0.75 | 0.70 | 0.65 | committee |
+| Submission (incl. verbal) | 0.70 | 0.65 | 0.60 | committee |
+| Unanimous decision | 0.55 (any round) | | | committee |
+| Doctor / corner stoppage | 0.75 | 0.70 | 0.65 | **to confirm** (treated as a stoppage) |
+| Split / majority decision | 0.55 | | | **to confirm** (same as unanimous) |
+| Disqualification | 0.55 | | | **to confirm** |
+
+Finishes in round 4 or 5 use the round-3 weight. Management can change any weight in
+the admin dashboard (Rankings tab); rankings recalculate immediately.
+
 ## Deploy (in this order)
 
 1. **Database** — Supabase dashboard → SQL Editor, run in order:
    1. `supabase/migrations/20261001000100_wds_core_schema.sql`
    2. `supabase/migrations/20261001000200_wds_scoring_and_rankings.sql`
    3. `supabase/migrations/20261001000300_wds_seed_current_content.sql`
+   4. `supabase/migrations/20261008000400_wds_committee_ranking_formula.sql`
+   5. `supabase/migrations/20261008000500_wds_upcoming_events_oct.sql`
 
    Safe on the existing project: tables from the old dashboard/ScoreHUB schema with
    the same names are renamed to `legacy_<name>_<date>` (kept, never dropped). All
@@ -77,6 +103,13 @@ submits or the referee records a stoppage) `→ final` (management clicks **Fina
   `reset_bout`, `admin_recompute_rankings`), the ELO ranking engine (same algorithm
   as the Rankings page, final results only), `public_rankings` view, Realtime
   publication, `bootstrap_admin`.
+- `…0400_wds_committee_ranking_formula.sql` — `ranking_method_weights` table (editable by
+  management, readable by everyone), committee Score in `fighter_rankings` / `public_rankings`,
+  automatic recalculation when a result, its round or a weight changes.
+- `…0500_wds_upcoming_events_oct.sql` — `events.page_url` (custom event page) and
+  `events.series_label`; Rising Star 8 (24–25 Oct, Fit & Fight Club, Wagholi, Pune, 8 AM)
+  and Fight Night 19 (12 Dec, CIDCO Exhibition Ground, Vashi, 5 PM). Never overwrites
+  details already changed in the database.
 - `…0300_wds_seed_current_content.sql` — the five past events, *WDS Rising Star 8*
   as Announced (no date), and the 34 fights from the Rankings page as final results
   under an unlisted "historical import" event.
@@ -90,10 +123,11 @@ submits or the referee records a stoppage) `→ final` (management clicks **Fina
 | `css/wds-live.css` | **new** — fight-card rows and the "View Fight Card" button (site palette) |
 | `pages/event.html` | **new** — event status, details, fight card, final results |
 | `index.html`, `pages/events.html` | +4 script tags, +1 stylesheet (markup untouched) |
-| `pages/rankings.html` | data now from `public_rankings`; original list kept as offline fallback; same render code |
+| `pages/rankings.html` | data from `public_rankings`, ranked by the committee Score (column "Score" instead of "ELO"); saved list kept as offline fallback using the same formula |
 | `js/main.js` | event filter looks up cards on click (so live cards filter too) |
 | `admin-dashboard.html` | forms for the new workflow; inline script → `js/admin-dashboard.js` |
-| `js/admin-dashboard.js` | rewritten for the shared schema (edit events, finalize/reopen, officials, read-only scorecards) |
+| `js/admin-dashboard.js` | rewritten for the shared schema (edit events, finalize/reopen, officials, read-only scorecards); Rankings tab shows Score, Win %, method points and a win-method weight editor |
+| `js/wds-live.js` | also fills the Home "Upcoming Events" list and the Events page upcoming bands (one per announced/scheduled/live event) |
 
 With the seed data, Home, Events and Rankings render **identical HTML** to the
 previous static pages; if the database is unreachable the static content stays.

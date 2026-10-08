@@ -1,57 +1,155 @@
-# Warriors Dream Series — Website
+# WDS ⇄ ScoreHUB ⇄ Rankings — shared database
 
-A clean, static rebuild of the [warriorsdreamseries.com](https://warriorsdreamseries.com) front end: plain HTML, CSS and vanilla JS, no build step, no CMS dependency. Ready to push to GitHub and deploy on GitHub Pages, Netlify, Vercel or any static host.
-
-## Structure
+One Supabase project (`qjqpquwcfarvyjzfzjcb`) is now the single source of truth for
+**events, fighters, fights, judges' scores, results and rankings**. Nothing is copied
+between sites any more:
 
 ```
-.
-├── index.html              Home page
-├── pages/
-│   ├── events.html          Full events / season schedule
-│   ├── about.html           About, mission, story, team
-│   ├── contact.html         Contact info + message form
-│   └── media-room.html      Press videos + news mentions
-├── css/style.css            Shared stylesheet (dark theme, red accent)
-├── js/main.js               Mobile nav, event filters, countdown, form handler
-└── assets/images/           All site imagery
+ WDS admin dashboard ──► events / fighters / bouts / officials ──┐
+                                                                 ▼
+ ScoreHUB (judges, referee) ──► round scores ──► PROVISIONAL result      Supabase (Postgres + RLS + Realtime)
+                                                                 │
+ Management "Finalize" ──► FINAL result ──► rankings recomputed ─┤
+                                                                 ▼
+ WDS Home / Events / Event page / Rankings  ◄── read live (public, read-only)
 ```
 
-## Running it locally
+## Event lifecycle
 
-No build tools needed — just serve the folder statically, e.g.:
+| Status | Set by | Public website | ScoreHUB |
+| --- | --- | --- | --- |
+| Draft | management | hidden | visible to officials |
+| Announced | management (date/time/venue may be empty → "TBA") | shown as Upcoming | visible |
+| Scheduled | **automatic** once an Announced event has date + start time + venue | Upcoming with details | visible |
+| Live | **automatic** when the first bout starts in ScoreHUB | "Live Now" | scoring |
+| Completed | **automatic** when no bout is scheduled/live any more | "Event Ended" / results | past |
+| Cancelled | management | hidden from the schedule | — |
 
-```bash
-python3 -m http.server 8080
-# then open http://localhost:8080
+Each bout result is `none → provisional` (written by ScoreHUB when the last judge
+submits or the referee records a stoppage) `→ final` (management clicks **Finalize**).
+**Only final results** appear on the website and count for rankings. An admin can
+**Reopen** a final result to correct it; rankings recompute automatically either way.
+
+## Ranking formula (committee, October 2026)
+
+```
+Score = (Win% × 0.7 + Win Method Weight × 0.3) × √(total fights)
 ```
 
-or open `index.html` directly in a browser (a couple of relative links assume a server, but most of the site works fine from the filesystem too).
+- **Win%** = wins ÷ (wins + losses + draws) × 100. No contests are not counted.
+- **Win Method Weight** = the weights of all the fighter's wins **added together**.
+- Committee check: 6 W / 3 L / 1 D with win weights totalling 4.05 →
+  (60 × 0.7 + 4.05 × 0.3) × √10 = **136.6578**.
+- Fighters are ranked by Score, highest first, within each division. Ties: more wins first.
 
-## Deploying
+| Win method | R1 | R2 | R3 | Source |
+| --- | --- | --- | --- | --- |
+| KO / TKO / referee stoppage | 0.75 | 0.70 | 0.65 | committee |
+| Submission (incl. verbal) | 0.70 | 0.65 | 0.60 | committee |
+| Unanimous decision | 0.55 (any round) | | | committee |
+| Doctor / corner stoppage | 0.75 | 0.70 | 0.65 | **to confirm** (treated as a stoppage) |
+| Split / majority decision | 0.55 | | | **to confirm** (same as unanimous) |
+| Disqualification | 0.55 | | | **to confirm** |
 
-- **GitHub Pages**: push to a repo, then enable Pages on the `main` branch (root).
-- **Netlify / Vercel**: drag-and-drop the folder or connect the repo — no build command needed, publish directory is `/`.
+Finishes in round 4 or 5 use the round-3 weight. Management can change any weight in
+the admin dashboard (Rankings tab); rankings recalculate immediately.
 
-## Hero background video
+## Deploy (in this order)
 
-The home page hero now plays a looping YouTube video (`https://youtu.be/F2Uu6WP3tu0`) as its background, with a dark overlay behind the headline for readability — see `.hero-video-bg` / `.hero-overlay` in `css/style.css` and the `<iframe>` in `index.html`. A few notes:
+1. **Database** — Supabase dashboard → SQL Editor, run in order:
+   1. `supabase/migrations/20261001000100_wds_core_schema.sql`
+   2. `supabase/migrations/20261001000200_wds_scoring_and_rankings.sql`
+   3. `supabase/migrations/20261001000300_wds_seed_current_content.sql`
+   4. `supabase/migrations/20261008000400_wds_committee_ranking_formula.sql`
+   5. `supabase/migrations/20261008000500_wds_upcoming_events_oct.sql`
 
-- It's muted and set to autoplay + loop (`mute=1&loop=1&playlist=<id>`), which is required for autoplay to work in every modern browser — YouTube (and browsers generally) block unmuted autoplay.
-- It's a live YouTube embed, not a self-hosted file, so it needs the visitor's browser to reach youtube.com — it won't preview inside offline/sandboxed tools, but will play normally on a real site visit.
-- To swap in a different video, just change the video ID in the `src` (both the `embed/<id>` and `playlist=<id>` parts need to match).
-- If you'd rather self-host the video (faster load, no YouTube branding flash, works without third-party cookies), replace the `<iframe>` with a plain `<video autoplay muted loop playsinline>` tag pointing at an `.mp4` in `assets/`.
+   Safe on the existing project: tables from the old dashboard/ScoreHUB schema with
+   the same names are renamed to `legacy_<name>_<date>` (kept, never dropped). All
+   three files can be re-run.
+2. **Auth settings** — Authentication → Providers → Email: turn **off "Confirm email"**
+   (officials set their PIN on first sign-in at the venue). Authentication → URL
+   configuration: add `https://candies-studios.github.io` to the redirect URLs.
+3. **First admin** — SQL Editor: `select public.bootstrap_admin('you@example.com', 'Your Name');`
+   then log in to `admin-dashboard.html` with that email; the password you type the
+   first time becomes yours.
+4. **Deploy the WDS site** (this repo) and **ScoreHUB** (its repo) — plain file commits,
+   no build step for either.
 
-## Things worth doing before this replaces the live site
+## Day-to-day
 
-- **Contact form**: the form on `pages/contact.html` is currently a static form with a placeholder JS handler (see `js/main.js`) — it doesn't send anywhere yet. Wire it up to a form backend such as [Formspree](https://formspree.io), [Netlify Forms](https://docs.netlify.com/forms/setup/), or a small serverless function that emails `support@warriorsdreamseries.com`.
-- **Footer contact details**: the live site's footer currently shows placeholder text left over from the page-builder template (a San Francisco address, `+88 (0) 101 0000 000`, and `info@yourdomain.com`). This rebuild carries the same placeholders forward — swap in the real address/phone once you have them.
-- **Social links**: the header/footer social icons (Instagram, Facebook, LinkedIn, YouTube) point to `#` — drop in the real profile URLs.
-- **Team photos**: two team members without a photo on the live site (Sejal Doshi, Piyush Agarwal) show initials instead of a picture — same as the original. A few of the other team photos on the live site couldn't be matched to a name with full confidence from the page source, so they're labelled `team-member-2.jpg` through `team-member-8.jpg` in `assets/images/` — rename them to the correct person once you confirm which is which (Sudhanshu Srivastav, Satish Mishra, Sairaj Yermal, Tanmay Gurjar, Dipesh Rasal, Sumit Jadhav, Sushil Chandanshive) and update the `src` in `pages/about.html`.
-- **Images optimized for the web**: most photos were re-compressed to reasonable web sizes (max ~1400px, JPEG quality ~0.8) while pulling them from the live site, so file sizes are much smaller than the originals. The logo was kept at full, lossless quality. If you want a specific photo at full original resolution, re-export it from your WordPress media library.
-- **Rankings, testimonials, "recent blog"**: the fighter rankings and testimonials are carried over as static content, matching what's on the live site today — update them by hand when they change, or wire the page up to a small data file / CMS if they'll change often.
-- **Copy**: the long-form paragraphs (About Us, Mission, Story, team bios) have been lightly reworded from the live site rather than copied verbatim — read them over and adjust the voice/wording to match how you'd want it phrased.
+- **Officials:** dashboard → Officials → add name, email, role. They open ScoreHUB,
+  type their name, pick their role and choose a PIN (6+ characters) on first sign-in.
+- **New event:** dashboard → Events → title + status *Announced*. Add date/time/venue
+  whenever known (Edit). Website and ScoreHUB update by themselves.
+- **Fight card:** in the dashboard (Bouts) or ScoreHUB (league → fighters/bouts).
+  Seat the three judges and the referee in ScoreHUB.
+- **Fight night:** judges score in ScoreHUB; results land as *provisional*.
+- **After the event:** dashboard → Bouts → *Finalize* each result, or Events →
+  *Finalize results* for the whole card. Website and Rankings update immediately.
 
-## Notes on fidelity
+## Every change, by file
 
-This is a from-scratch rebuild, not a scrape of the WordPress/Elementor markup — the goal was to reproduce the same sections, content, structure and visual style (dark background, red accent `#d7272a`, Teko + Oswald type) using plain, maintainable code instead of a page-builder's generated HTML. Fonts are loaded from Google Fonts; all images are stored locally under `assets/images/`.
+### Database (`supabase/migrations/`)
+- `…0100_wds_core_schema.sql` — tables `profiles`, `official_invites`, `events`,
+  `fighters`, `fighter_contacts` (private phone/DOB), `event_fighters`, `bouts`,
+  `bout_judges`, `round_scores`, `fighter_rankings`; lifecycle triggers (slug,
+  auto-Scheduled, auto-Live/Completed, protecting finalized history); public view
+  `public_bout_card` (hides provisional results); Row Level Security on every table;
+  media storage bucket `wds-media`.
+- `…0200_wds_scoring_and_rankings.sql` — scoring RPCs used by ScoreHUB
+  (`bout_start`, `bout_set_clock`, `bout_submit_round`, `bout_finish`,
+  `bout_heartbeat`), the decision engine (identical to ScoreHUB's), management RPCs
+  (`finalize_bout_result`, `finalize_event_results`, `reopen_bout_result`,
+  `reset_bout`, `admin_recompute_rankings`), the ELO ranking engine (same algorithm
+  as the Rankings page, final results only), `public_rankings` view, Realtime
+  publication, `bootstrap_admin`.
+- `…0400_wds_committee_ranking_formula.sql` — `ranking_method_weights` table (editable by
+  management, readable by everyone), committee Score in `fighter_rankings` / `public_rankings`,
+  automatic recalculation when a result, its round or a weight changes.
+- `…0500_wds_upcoming_events_oct.sql` — `events.page_url` (custom event page) and
+  `events.series_label`; Rising Star 8 (24–25 Oct, Fit & Fight Club, Wagholi, Pune, 8 AM)
+  and Fight Night 19 (12 Dec, CIDCO Exhibition Ground, Vashi, 5 PM). Never overwrites
+  details already changed in the database.
+- `…0300_wds_seed_current_content.sql` — the five past events, *WDS Rising Star 8*
+  as Announced (no date), and the 34 fights from the Rankings page as final results
+  under an unlisted "historical import" event.
+
+### WDS website
+| File | Change |
+| --- | --- |
+| `js/wds-config.js` | **new** — project URL, public anon key, ScoreHUB URL |
+| `js/wds-data.js` | **new** — read-only data layer + live updates (Realtime, polling fallback) |
+| `js/wds-live.js` | **new** — fills Home/Events/Event pages by cloning the existing cards |
+| `css/wds-live.css` | **new** — fight-card rows and the "View Fight Card" button (site palette) |
+| `pages/event.html` | **new** — event status, details, fight card, final results |
+| `index.html`, `pages/events.html` | +4 script tags, +1 stylesheet (markup untouched) |
+| `pages/rankings.html` | data from `public_rankings`, ranked by the committee Score (column "Score" instead of "ELO"); saved list kept as offline fallback using the same formula |
+| `js/main.js` | event filter looks up cards on click (so live cards filter too) |
+| `admin-dashboard.html` | forms for the new workflow; inline script → `js/admin-dashboard.js` |
+| `js/admin-dashboard.js` | rewritten for the shared schema (edit events, finalize/reopen, officials, read-only scorecards); Rankings tab shows Score, Win %, method points and a win-method weight editor |
+| `js/wds-live.js` | also fills the Home "Upcoming Events" list and the Events page upcoming bands (one per announced/scheduled/live event) |
+
+With the seed data, Home, Events and Rankings render **identical HTML** to the
+previous static pages; if the database is unreachable the static content stays.
+
+### ScoreHUB (separate repo)
+The live app bundle is not rebuilt (its newer source is not in GitHub).
+`index.html` gets the Supabase URL/key in its config block and two script tags;
+`supabase-bridge.js` (new) and `vendor/supabase.js` (new) answer ScoreHUB's built-in
+API and live-sync socket from this database. See `SUPABASE-BRIDGE.md` in that repo.
+
+## Security model (RLS)
+- **Public (anon):** non-draft events, fighters (no phone/DOB), `public_bout_card`,
+  `public_rankings`. Cannot read raw bouts, scorecards, officials or contacts; cannot write.
+- **Judges / referees:** read events, cards, scorecards; change bouts **only** through
+  the scoring RPCs, and only on bouts they are seated on / refereeing.
+- **Promoter (management):** create/edit events, fighters, bouts, officials; finalize.
+- **Admin:** everything, plus reopen finalized results, delete events, change roles.
+- Roles come only from management invites — never from what a user types.
+
+## Known follow-ups
+- Some imported names are placeholders from the old Rankings page (`Opponent1…6`,
+  `OpponentRS7-1…4`), and "Ashok Bagde"/"Ashok Bagade" are two spellings. Fix them in
+  Fighters; rankings update by themselves.
+- The footer "Rankings" link on Home/Events still points to the external fightrank site.
+- ScoreHUB's earlier scorecards live only in each tablet's browser storage.
