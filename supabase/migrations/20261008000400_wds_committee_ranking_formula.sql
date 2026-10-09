@@ -10,6 +10,11 @@
 -- Committee example: 10 bouts, 6 wins / 3 losses / 1 draw, win weights
 -- totalling 4.05  ->  (60 × 0.7 + 4.05 × 0.3) × √10 = 136.6578291
 --
+-- Each finalized fight also records, for BOTH fighters, how the fight ended,
+-- the method weight earned (0 for the loser) and the ranking score before and
+-- after that fight (public_bout_points / public_last_fights) — shown on the
+-- event page and the Rankings page.
+--
 -- Only FINALIZED results count, exactly as before. Fighters are ranked by
 -- Score (highest first) within their division. The weights live in a table
 -- that management can edit from the admin dashboard; every edit recalculates
@@ -94,6 +99,35 @@ alter table public.fighter_rankings add column if not exists method_points numer
 alter table public.fighter_rankings alter column elo drop not null;
 create index if not exists fighter_rankings_score_idx on public.fighter_rankings(division_key, score desc);
 
+-- Per-fight points for both fighters (written only by recompute_rankings).
+create table if not exists public.bout_points (
+  bout_id       uuid not null references public.bouts(id) on delete cascade,
+  fighter_id    uuid not null references public.fighters(id) on delete cascade,
+  opponent_id   uuid references public.fighters(id) on delete set null,
+  corner        text not null check (corner in ('BLUE','RED')),
+  outcome       text not null check (outcome in ('W','L','D','NC')),
+  result_type   text,
+  end_round     int,
+  method_weight numeric(10,4) not null default 0,
+  score_before  numeric(12,4) not null default 0,
+  score_after   numeric(12,4) not null default 0,
+  wins_after    int not null default 0,
+  losses_after  int not null default 0,
+  draws_after   int not null default 0,
+  seq           int not null,               -- chronological order of the fight
+  primary key (bout_id, fighter_id)
+);
+comment on table public.bout_points is 'wds:v1 per-fight ranking points for each fighter (derived from final results)';
+create index if not exists bout_points_fighter_idx on public.bout_points(fighter_id, seq desc);
+
+create or replace function public.wds_score(p_wins int, p_losses int, p_draws int, p_method_points numeric)
+returns numeric language sql immutable as $$
+  select case when coalesce(p_wins, 0) + coalesce(p_losses, 0) + coalesce(p_draws, 0) = 0 then 0
+    else round(((100.0 * p_wins / (p_wins + p_losses + p_draws))::float8 * 0.7
+               + p_method_points::float8 * 0.3)::numeric
+               * sqrt((p_wins + p_losses + p_draws)::numeric), 4) end
+$$;
+
 -- -----------------------------------------------------------------------------
 -- 3. Ranking engine (committee formula). ELO is still stored for reference
 --    but no longer decides the order.
@@ -105,6 +139,9 @@ declare
   ra int; rb int; sa float8; ea float8; eb float8;
   n int;
   seq int := 0;
+  side record;
+  acc record;
+  earned numeric;
 begin
   -- first_seq = order in which a fighter first appears (blue corner before
   -- red), used to break exact score ties consistently.
@@ -130,6 +167,49 @@ begin
     eb := 1 / (1 + power(10::float8, (ra - rb)::float8 / 400));
     update _elo set elo = floor(ra + 32 * (sa - ea) + 0.5)::int       where fighter_id = r.a;
     update _elo set elo = floor(rb + 32 * ((1 - sa) - eb) + 0.5)::int where fighter_id = r.c;
+  end loop;
+
+  -- Per-fight points, in fight order, for both corners.
+  create temp table if not exists _acc (fighter_id uuid primary key, w int, l int, d int, mp numeric) on commit drop;
+  truncate _acc;
+  delete from public.bout_points;
+  seq := 0;
+  for r in
+    select b.id, b.blue_fighter_id, b.red_fighter_id, b.winner_id, b.result_type, b.end_round
+      from public.bouts b
+      join public.events e on e.id = b.event_id
+     where b.result_status = 'final'
+       and b.blue_fighter_id is not null and b.red_fighter_id is not null
+     order by coalesce(e.event_date, b.bout_date, b.completed_at::date) nulls last,
+              e.starts_at nulls last, e.created_at, b.bout_number, b.completed_at nulls last, b.id
+  loop
+    seq := seq + 1;
+    insert into _acc values (r.blue_fighter_id, 0, 0, 0, 0), (r.red_fighter_id, 0, 0, 0, 0) on conflict do nothing;
+    for side in
+      select x.fid, x.opp, x.corner,
+             case when r.result_type = 'NO_CONTEST' then 'NC'
+                  when r.winner_id = x.fid then 'W'
+                  when r.winner_id is not null then 'L'
+                  else 'D' end as outcome
+        from (values (r.blue_fighter_id, r.red_fighter_id, 'BLUE'),
+                     (r.red_fighter_id, r.blue_fighter_id, 'RED')) as x(fid, opp, corner)
+    loop
+      select * into acc from _acc where fighter_id = side.fid;
+      earned := case when side.outcome = 'W' then public.wds_win_weight(r.result_type, r.end_round) else 0 end;
+      insert into public.bout_points
+        (bout_id, fighter_id, opponent_id, corner, outcome, result_type, end_round, method_weight,
+         score_before, score_after, wins_after, losses_after, draws_after, seq)
+      values
+        (r.id, side.fid, side.opp, side.corner, side.outcome, r.result_type, r.end_round, earned,
+         public.wds_score(acc.w, acc.l, acc.d, acc.mp),
+         public.wds_score(acc.w + (side.outcome = 'W')::int, acc.l + (side.outcome = 'L')::int,
+                          acc.d + (side.outcome = 'D')::int, acc.mp + earned),
+         acc.w + (side.outcome = 'W')::int, acc.l + (side.outcome = 'L')::int, acc.d + (side.outcome = 'D')::int,
+         seq);
+      update _acc set w = w + (side.outcome = 'W')::int, l = l + (side.outcome = 'L')::int,
+                      d = d + (side.outcome = 'D')::int, mp = mp + earned
+       where fighter_id = side.fid;
+    end loop;
   end loop;
 
   with fights as (
@@ -273,12 +353,46 @@ select fr.fighter_id, f.name, f.nickname, f.photo_url, f.country,
   join public.fighters f on f.id = fr.fighter_id;
 grant select on public.public_rankings to anon, authenticated;
 
+-- Per-fight points, public (only finalized fights of non-draft events exist here).
+alter table public.bout_points enable row level security;
+drop policy if exists bout_points_select on public.bout_points;
+create policy bout_points_select on public.bout_points for select using (true);
+revoke insert, update, delete on public.bout_points from anon, authenticated;
+grant select on public.bout_points to anon, authenticated;
+
+create or replace view public.public_bout_points as
+select bp.bout_id, b.event_id, e.slug as event_slug, e.title as event_title,
+       coalesce(e.event_date, b.bout_date) as fought_on, b.bout_number,
+       bp.fighter_id, f.name as fighter_name, bp.opponent_id, o.name as opponent_name,
+       bp.corner, bp.outcome, bp.result_type, bp.end_round, b.end_time_sec,
+       bp.method_weight, bp.score_before, bp.score_after,
+       round(bp.score_after - bp.score_before, 4) as score_change,
+       bp.wins_after, bp.losses_after, bp.draws_after, bp.seq
+  from public.bout_points bp
+  join public.bouts b on b.id = bp.bout_id and b.result_status = 'final'
+  join public.events e on e.id = b.event_id and e.status <> 'draft'
+  join public.fighters f on f.id = bp.fighter_id
+  left join public.fighters o on o.id = bp.opponent_id;
+grant select on public.public_bout_points to anon, authenticated;
+
+-- Each fighter's most recent finalized fight (Rankings page).
+create or replace view public.public_last_fights as
+select distinct on (fighter_id) *
+  from public.public_bout_points
+ order by fighter_id, seq desc;
+grant select on public.public_last_fights to anon, authenticated;
+
 do $$
 begin
   if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
      and not exists (select 1 from pg_publication_tables
                       where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'ranking_method_weights') then
     alter publication supabase_realtime add table public.ranking_method_weights;
+  end if;
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
+     and not exists (select 1 from pg_publication_tables
+                      where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'bout_points') then
+    alter publication supabase_realtime add table public.bout_points;
   end if;
 end $$;
 

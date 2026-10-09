@@ -138,7 +138,19 @@
   }
 
   // ---------------------------------------------------------------- fight card
-  function boutRow(b, eventStatus) {
+  function pointsBlock(p) {
+    if (!p) return '';
+    return '<span class="wds-points">' +
+      '<span class="wds-points-how">' + esc(W.outcomeText(p)) + '</span>' +
+      '<span class="wds-points-line">Method pts <strong>' + (p.outcome === 'W' ? '+' : '') + W.num(p.method_weight).toFixed(2) + '</strong>' +
+      ' · Score <strong>' + W.num(p.score_after).toFixed(2) + '</strong> <em class="' +
+      (W.num(p.score_change) < 0 ? 'is-down' : W.num(p.score_change) > 0 ? 'is-up' : '') + '">(' + W.signed(p.score_change) + ')</em></span>' +
+      '<span class="wds-points-line">Record ' + p.wins_after + '-' + p.losses_after + (p.draws_after ? '-' + p.draws_after : '') + '</span>' +
+      '</span>';
+  }
+
+  function boutRow(b, eventStatus, points) {
+    points = points || {};
     var res = W.describeResult(b);
     var state = b.status === 'LIVE' ? 'Live'
       : b.result_status === 'final' ? 'Final'
@@ -151,7 +163,8 @@
       return '<div class="wds-corner wds-' + side + (winner ? ' is-winner' : '') + (res && b.winner_id && !winner ? ' is-loser' : '') + '">' +
         '<span class="wds-corner-label">' + (side === 'blue' ? 'Blue corner' : 'Red corner') + (winner ? ' · Winner' : '') + '</span>' +
         '<span class="wds-name">' + esc(name || 'To be announced') + '</span>' +
-        (nick ? '<span class="wds-nick">“' + esc(nick) + '”</span>' : '') + '</div>';
+        (nick ? '<span class="wds-nick">“' + esc(nick) + '”</span>' : '') +
+        (res ? pointsBlock(points[b.id + ':' + id]) : '') + '</div>';
     }
     return '<article class="wds-bout' + (b.status === 'LIVE' ? ' is-live' : '') + (res ? ' is-final' : '') + '">' +
       '<div class="wds-bout-head"><span class="ev-tag">' + esc(tags) + '</span><span class="wds-bout-state">' + esc(state) + '</span></div>' +
@@ -302,7 +315,10 @@
       setText(document.querySelector('.page-hero h1'), ev.title);
       var hero = document.querySelector('.page-hero');
       if (hero && ev.poster_url) hero.style.backgroundImage = "url('" + asset(ev.poster_url) + "')";
-      return W.card(ev.id).then(function (bouts) {
+      return Promise.all([W.card(ev.id), W.boutPoints(ev.id).catch(function () { return []; })]).then(function (r) {
+        var bouts = r[0];
+        var points = {};
+        r[1].forEach(function (p) { points[p.bout_id + ':' + p.fighter_id] = p; });
         var block = document.querySelector('.event-upcoming');
         if (block) fillEventsUpcoming(block, ev, {}, {
           leftLabel: function (e) { return W.statusLabel(e.status) === 'Event Ended' ? 'Results' : W.statusLabel(e.status); },
@@ -319,7 +335,7 @@
             : 'The fight card will be announced soon.') + '</p>';
           return;
         }
-        root.innerHTML = bouts.map(function (b) { return boutRow(b, ev.status); }).join('');
+        root.innerHTML = bouts.map(function (b) { return boutRow(b, ev.status, points); }).join('');
       });
     });
   }
@@ -336,7 +352,7 @@
 
   function start() {
     refresh();
-    W.subscribe(['events'], refresh);
+    W.subscribe(document.getElementById('wds-fight-card') ? ['events', 'bout_points'] : ['events'], refresh);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();

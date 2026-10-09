@@ -115,3 +115,26 @@ a.eu-cta:hover { background: var(--red, #d7272a); color: #fff; }
 
 /* Events page upcoming bands: values read in capitals, as on the published page */
 .eu-live .eu-value { text-transform: uppercase; }
+
+/* Event page: how each fighter's fight ended and the ranking points it gave */
+.wds-points {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 10px;
+  color: #9d9d9d;
+  font-size: .82rem;
+  line-height: 1.35;
+}
+.wds-points-how {
+  color: #fff;
+  font-family: 'Teko', sans-serif;
+  font-size: 1.15rem;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+}
+.wds-corner.is-loser .wds-points-how { color: #bdbdbd; }
+.wds-points strong { color: #fff; font-weight: 700; }
+.wds-points em { font-style: normal; }
+.wds-points em.is-up { color: #34d399; }
+.wds-points em.is-down { color: #ff6b6b; }

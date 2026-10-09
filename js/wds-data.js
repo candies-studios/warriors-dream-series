@@ -105,6 +105,30 @@
       return c;
     });
   }
+  // Per-fight points for both fighters (final results only).
+  function boutPoints(eventId) {
+    return rest('public_bout_points?select=bout_id,fighter_id,outcome,result_type,end_round,end_time_sec,method_weight,score_before,score_after,score_change,wins_after,losses_after,draws_after' +
+      '&event_id=eq.' + encodeURIComponent(eventId));
+  }
+  function lastFights() {
+    return rest('public_last_fights?select=fighter_id,outcome,result_type,end_round,end_time_sec,method_weight,score_change,score_after,opponent_name,event_title,event_slug,fought_on');
+  }
+  function num(v) { return Number(v || 0); }
+  function signed(v) {
+    var n = num(v);
+    return (n > 0 ? '+' : n < 0 ? '−' : '±') + Math.abs(n).toFixed(2);
+  }
+  // "Won by TKO · R2 1:35" / "Lost by Submission · R1" / "Draw" / "No contest"
+  function outcomeText(p) {
+    var how = RESULT_LABEL[p.result_type] || p.result_type || '';
+    var when = p.end_round && !/^DECISION|DRAW/.test(p.result_type || '')
+      ? ' · R' + p.end_round + (p.end_time_sec != null ? ' ' + clock(p.end_time_sec) : '') : '';
+    if (p.outcome === 'W') return 'Won by ' + how + when;
+    if (p.outcome === 'L') return 'Lost by ' + how + when;
+    if (p.outcome === 'D') return how + when;
+    return 'No contest' + when;
+  }
+
   function rankings() {
     return rest('public_rankings?select=*&order=division_key,division_rank');
   }
@@ -156,6 +180,11 @@
     card: card,
     cardCounts: cardCounts,
     rankings: rankings,
+    boutPoints: boutPoints,
+    lastFights: lastFights,
+    outcomeText: outcomeText,
+    signed: signed,
+    num: num,
     featured: featured,
     subscribe: subscribe,
     formatDate: formatDate,

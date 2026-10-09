@@ -239,6 +239,16 @@
       font-weight: 600;
     }
 
+    .fighter-last {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    .fighter-last .pts-up { color: #10b981; font-weight: 700; }
+    .fighter-last .pts-down { color: #d63031; font-weight: 700; }
+
     .elo-rating {
       font-weight: 800;
       font-size: 16px;
@@ -498,6 +508,7 @@
           score: Number(r.score),
           rank: r.division_rank,
           order: r.overall_rank,
+          last: r.last || null,
           record: r.draws ? `${r.wins}-${r.losses}-${r.draws}` : `${r.wins}-${r.losses}`
         });
       });
@@ -527,6 +538,20 @@
       if (score >= 60) return 'elo-strong';
       return 'elo-developing';
     }
+    function escapeText(value) {
+      return String(value == null ? '' : value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    // Latest finalized fight: how it ended and the points it gave.
+    function lastFightLine(last) {
+      if (!last || !window.WDS) return '';
+      const change = Number(last.score_change || 0);
+      const cls = change > 0 ? 'pts-up' : change < 0 ? 'pts-down' : '';
+      const method = last.outcome === 'W' ? ` · method <strong>+${Number(last.method_weight).toFixed(2)}</strong>` : '';
+      return `<span class="fighter-last">Last fight: ${escapeText(window.WDS.outcomeText(last))} vs ${escapeText(last.opponent_name || 'TBA')}` +
+        `${last.event_title ? ' · ' + escapeText(last.event_title) : ''}${method} · score <span class="${cls}">${window.WDS.signed(change)}</span></span>`;
+    }
+
     function formatScore(score) {
       return Number(score).toFixed(2);
     }
@@ -542,6 +567,7 @@
             <div class="fighter-info">
               <span class="fighter-name">${fighter.name}</span>
               <span class="fighter-div">${fighter.division}</span>
+              ${lastFightLine(fighter.last)}
             </div>
           </td>
           <td>${fighter.record}</td>
@@ -629,8 +655,11 @@
 
     function loadRankings() {
       if (!window.WDS || !window.WDS.enabled) return Promise.reject(new Error('offline'));
-      return window.WDS.rankings().then(rows => {
+      return Promise.all([window.WDS.rankings(), window.WDS.lastFights().catch(() => [])]).then(([rows, fights]) => {
         if (!rows.length) throw new Error('no rankings yet');
+        const lastByFighter = {};
+        fights.forEach(f => { lastByFighter[f.fighter_id] = f; });
+        rows.forEach(r => { r.last = lastByFighter[r.fighter_id]; });
         render(divisionsFromDatabase(rows));
       });
     }
@@ -638,7 +667,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       render(divisionsFromFights());
       loadRankings()
-        .then(() => window.WDS.subscribe(['fighter_rankings'], () => loadRankings().catch(() => {})))
+        .then(() => window.WDS.subscribe(['fighter_rankings', 'bout_points'], () => loadRankings().catch(() => {})))
         .catch(e => console.warn('[wds] rankings: using the saved list', e && e.message));
     });
   </script>

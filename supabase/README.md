@@ -51,6 +51,11 @@ Score = (Win% × 0.7 + Win Method Weight × 0.3) × √(total fights)
 | Split / majority decision | 0.55 | | | **to confirm** (same as unanimous) |
 | Disqualification | 0.55 | | | **to confirm** |
 
+**Per-fight points.** When a result is finalized, both fighters get a record of that fight:
+how it ended ("Won by TKO · R2" / "Lost by TKO · R2"), the method points earned (0 for the
+loser) and their ranking score before and after. The event page shows this under each
+fighter; the Rankings page shows each fighter's latest fight under their name.
+
 Finishes in round 4 or 5 use the round-3 weight. Management can change any weight in
 the admin dashboard (Rankings tab); rankings recalculate immediately.
 
