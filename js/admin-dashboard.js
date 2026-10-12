@@ -83,10 +83,9 @@ function activeTab() {
     return el ? el.id : 'fighters';
 }
 
-// Data is loaded only for signed-in management; logged-out visitors see the
-// sign-in panel instead of database errors.
+// Everyone can view. Logged-out visitors get the public data (the same the
+// website shows); management sees everything and can make changes.
 function loadTab(tabName) {
-    if (!isStaff()) return;
     if (tabName === 'fighters') loadFighters();
     else if (tabName === 'events') loadEvents();
     else if (tabName === 'bouts') { loadEvents(); loadFighters(); loadBouts(); }
@@ -99,7 +98,7 @@ function loadTab(tabName) {
 // session ended or the account lost access: re-check and show the sign-in panel.
 function listError(container, error) {
     if (container) container.innerHTML = `<div class="message error">${esc(friendly(error))}</div>`;
-    if (isPermissionError(error)) updateAuthUI();
+    if (isPermissionError(error) && me) updateAuthUI();
 }
 function isPermissionError(error) {
     const msg = (error && (error.message || error.code)) || '';
@@ -164,24 +163,22 @@ async function updateAuthUI() {
     document.getElementById('loginButton').style.display = session ? 'none' : '';
     document.getElementById('logoutButton').style.display = session ? '' : 'none';
 
-    // Management sees the dashboard; everyone else sees why not.
+    // Reload the open tab when access changes (public view <-> management view).
     const staff = isStaff();
-    document.getElementById('adminArea').hidden = !staff;
-    const notice = document.getElementById('lockedNotice');
-    notice.hidden = staff;
-    if (!staff) {
-        notice.innerHTML = !session
-            ? '<h2>Management login</h2><p>Log in with your Admin or Promoter account to manage events, fighters, bouts, officials, results and rankings.</p><button onclick="openLoginModal()">Login</button>'
-            : `<h2>No management access</h2><p>You are signed in as ${esc(session.user.email)}${me ? ' (' + esc(me.role) + ')' : ''}. This dashboard is for Admin and Promoter accounts — judges and referees score in ScoreHUB. Ask an admin to change your role, or log in with another account.</p><button class="btn-secondary" onclick="logoutUser()">Logout</button>`;
-    }
-    if (staff && wasStaff !== true) loadTab(activeTab());
+    if (staff !== wasStaff) loadTab(activeTab());
     wasStaff = staff;
 }
 
 function isStaff() { return me && (me.role === 'ADMIN' || me.role === 'PROMOTER'); }
 function requireStaff(messageId) {
     if (isStaff()) return true;
-    showMessage(messageId, 'Log in with an Admin or Promoter account to make changes.', 'error');
+    if (!me) {
+        // Viewing is public; changes need a management login.
+        openLoginModal();
+        showMessage('loginMessage', 'Log in with your Admin or Promoter account to save changes.', 'info');
+    } else {
+        showMessage(messageId, 'Only Admin or Promoter accounts can make changes.', 'error');
+    }
     return false;
 }
 
@@ -316,10 +313,18 @@ async function finalizeEvent(id) {
 
 async function loadEvents() {
     const container = document.getElementById('eventsList');
+    const staff = isStaff();
     const { data, error } = await db.from('events')
-        .select('id,public_id,title,status,event_date,start_time,venue,city,is_listed,bouts(count)')
+        .select('id,public_id,title,status,event_date,start_time,venue,city,is_listed' + (staff ? ',bouts(count)' : ''))
         .order('event_date', { ascending: false, nullsFirst: true });
     if (error) { listError(container, error); return; }
+    if (!staff) {
+        // Public view: count fights from the public fight card.
+        const { data: card } = await db.from('public_bout_card').select('event_id');
+        const counts = {};
+        (card || []).forEach(b => { counts[b.event_id] = (counts[b.event_id] || 0) + 1; });
+        data.forEach(e => { e.bouts = [{ count: counts[e.id] || 0 }]; });
+    }
     const listed = data.filter(e => e.is_listed);
     updateDropdown('boutEventId', listed, 'id', e => `${e.title} (${e.status})`);
     if (!container) return;
@@ -332,8 +337,8 @@ async function loadEvents() {
             const bouts = e.bouts && e.bouts[0] ? e.bouts[0].count : 0;
             return `<tr><td>${esc(e.title)}</td><td>${esc(formatDate(e.event_date))}</td><td>${esc(formatTime(e.start_time))}</td>` +
                 `<td>${esc([e.venue, e.city].filter(Boolean).join(', ') || 'TBA')}</td><td>${pill(e.status)}</td><td>${bouts}</td>` +
-                `<td><button class="btn-secondary" onclick="editEvent('${e.id}')">Edit</button>` +
-                (bouts ? `<button class="btn-secondary" onclick="finalizeEvent('${e.id}')">Finalize results</button>` : '') + '</td></tr>';
+                '<td>' + (staff ? `<button class="btn-secondary" onclick="editEvent('${e.id}')">Edit</button>` +
+                (bouts ? `<button class="btn-secondary" onclick="finalizeEvent('${e.id}')">Finalize results</button>` : '') : '') + '</td></tr>';
         }).join('') + '</tbody></table>';
 }
 
@@ -378,9 +383,50 @@ function boutLabel(b) {
     return `${b.event ? b.event.title : 'Event'} · #${b.bout_number}: ${b.blue ? b.blue.name : 'TBA'} vs ${b.red ? b.red.name : 'TBA'}`;
 }
 
+const RESULT_TEXT = {
+    DECISION_UNANIMOUS: 'Unanimous decision', DECISION_SPLIT: 'Split decision', DECISION_MAJORITY: 'Majority decision',
+    DRAW: 'Draw', MAJORITY_DRAW: 'Majority draw', KO_HEAD: 'KO', KO_BODY: 'KO (body)', TKO: 'TKO',
+    SUBMISSION: 'Submission', RNC: 'Submission (RNC)', DOCTOR_STOPPAGE: 'Doctor stoppage', CORNER_STOPPAGE: 'Corner stoppage',
+    DQ: 'Disqualification', NO_CONTEST: 'No contest',
+};
+
+// Public view of the fights: the same data the website's fight cards show.
+async function publicBouts(eventId) {
+    let query = db.from('public_bout_card')
+        .select('id,event_id,bout_number,status,result_status,result_type,winner_id,end_round,blue_fighter_id,blue_name,red_name')
+        .limit(1000);
+    if (eventId) query = query.eq('event_id', eventId);
+    const [{ data, error }, { data: events }] = await Promise.all([
+        query, db.from('events').select('id,title,event_date'),
+    ]);
+    if (error) return { error };
+    const ev = {};
+    (events || []).forEach(e => { ev[e.id] = e; });
+    const rows = data.map(b => {
+        const winner = b.winner_id ? (b.winner_id === b.blue_fighter_id ? b.blue_name : b.red_name) : null;
+        const how = RESULT_TEXT[b.result_type] || '';
+        return {
+            id: b.id, bout_number: b.bout_number, status: b.status,
+            result_status: b.result_status === 'final' ? 'final' : 'none',
+            result_note: b.result_status === 'final' ? (winner ? `${winner} wins · ${how}` : how) + (b.end_round && !/decision|draw/i.test(how) ? ` · R${b.end_round}` : '') : '',
+            event: ev[b.event_id] ? { title: ev[b.event_id].title } : null,
+            blue: { name: b.blue_name }, red: { name: b.red_name },
+            _date: ev[b.event_id] ? ev[b.event_id].event_date || '' : '',
+        };
+    });
+    rows.sort((a, b) => eventId ? a.bout_number - b.bout_number : (b._date.localeCompare(a._date) || a.bout_number - b.bout_number));
+    return { data: rows.slice(0, eventId ? 1000 : 200) };
+}
+
 async function loadBouts() {
     const container = spinner('boutsList');
     const eventId = val('boutEventId');
+    const staff = isStaff();
+    if (!staff) {
+        const { data, error } = await publicBouts(eventId);
+        if (error) { listError(container, error); return; }
+        return renderBouts(container, data, false);
+    }
     let query = db.from('bouts')
         .select('id,public_id,bout_number,status,result_status,result_note,event:events(title),blue:fighters!bouts_blue_fighter_id_fkey(name),red:fighters!bouts_red_fighter_id_fkey(name)')
         .order('created_at', { ascending: false })
@@ -388,6 +434,10 @@ async function loadBouts() {
     if (eventId) query = query.eq('event_id', eventId).order('bout_number');
     const { data, error } = await query;
     if (error) { listError(container, error); return; }
+    renderBouts(container, data, true);
+}
+
+function renderBouts(container, data, staff) {
     updateDropdown('scorecardBoutId', data, 'id', boutLabel);
     if (!container) return;
     if (!data.length) {
@@ -398,9 +448,10 @@ async function loadBouts() {
     container.innerHTML = '<table class="data-table"><thead><tr><th>Event</th><th>#</th><th>Blue</th><th>Red</th><th>Status</th><th>Result</th><th></th></tr></thead><tbody>' +
         data.map(b => {
             const actions = [];
-            if (b.result_status === 'provisional') actions.push(`<button onclick="finalizeBout('${b.id}')">Finalize</button>`);
-            if (b.result_status === 'final' && isAdmin) actions.push(`<button class="btn-secondary" onclick="reopenBout('${b.id}')">Reopen</button>`);
-            if (b.result_status !== 'final') actions.push(`<button class="btn-secondary" onclick="deleteBout('${b.id}')">Delete</button>`);
+            if (!staff) { /* view only */ }
+            else if (b.result_status === 'provisional') actions.push(`<button onclick="finalizeBout('${b.id}')">Finalize</button>`);
+            if (staff && b.result_status === 'final' && isAdmin) actions.push(`<button class="btn-secondary" onclick="reopenBout('${b.id}')">Reopen</button>`);
+            if (staff && b.result_status !== 'final') actions.push(`<button class="btn-secondary" onclick="deleteBout('${b.id}')">Delete</button>`);
             return `<tr><td>${esc(b.event ? b.event.title : '')}</td><td>${b.bout_number}</td><td>${esc(b.blue ? b.blue.name : 'TBA')}</td><td>${esc(b.red ? b.red.name : 'TBA')}</td>` +
                 `<td>${pill(b.status.toLowerCase(), b.status === 'LIVE' ? 'live' : '')}</td>` +
                 `<td>${b.result_note ? esc(b.result_note) + ' ' : ''}${b.result_status !== 'none' ? pill(b.result_status) : ''}</td><td>${actions.join('')}</td></tr>`;
@@ -416,6 +467,7 @@ async function finalizeBout(id) {
 }
 
 async function finalizeSelectedEvent() {
+    if (!requireStaff('boutMessage')) return;
     const eventId = val('boutEventId');
     if (!eventId) { showMessage('boutMessage', 'Select the event first', 'error'); return; }
     if (!requireStaff('boutMessage')) return;
@@ -427,6 +479,7 @@ async function finalizeSelectedEvent() {
 }
 
 async function reopenBout(id) {
+    if (!requireStaff('boutMessage')) return;
     if (!confirm('Reopen this finalized result? It will be removed from the website and the rankings until finalized again.')) return;
     const { error } = await db.rpc('reopen_bout_result', { p_bout: id });
     if (error) { showMessage('boutMessage', friendly(error), 'error'); return; }
@@ -461,6 +514,7 @@ async function addJudge() {
 }
 
 async function deactivateOfficial(id) {
+    if (!requireStaff('judgeMessage')) return;
     if (!confirm('Deactivate this official? They will no longer be able to sign in to ScoreHUB.')) return;
     const { data, error } = await db.from('profiles').update({ active: false }).eq('id', id).select('id');
     if (error || !data.length) { showMessage('judgeMessage', 'Only an admin can deactivate officials.', 'error'); return; }
@@ -468,6 +522,7 @@ async function deactivateOfficial(id) {
 }
 
 async function removeInvite(email) {
+    if (!requireStaff('judgeMessage')) return;
     const { error } = await db.from('official_invites').delete().eq('email', email);
     if (error) { showMessage('judgeMessage', friendly(error), 'error'); return; }
     loadJudges();
@@ -475,6 +530,16 @@ async function removeInvite(email) {
 
 async function loadJudges() {
     const container = spinner('judgesList');
+    if (!isStaff()) {
+        // Public view: names and roles only (contact details stay private).
+        const { data, error } = await db.rpc('list_officials');
+        if (error) { listError(container, error); return; }
+        if (!data || !data.length) { container.innerHTML = '<div class="empty-state"><p>No officials yet</p></div>'; return; }
+        container.innerHTML = '<table class="data-table"><thead><tr><th>Name</th><th>Role</th><th>Status</th></tr></thead><tbody>' +
+            data.map(o => `<tr><td>${esc(o.name)}</td><td>${esc(o.role)}</td><td>${pill(o.registered ? 'registered' : 'invited', o.registered ? 'registered' : 'invited')}</td></tr>`).join('') +
+            '</tbody></table><p class="form-hint" style="margin-top:16px">Emails and phone numbers are shown to management after login.</p>';
+        return;
+    }
     const [{ data: people, error }, { data: invites }] = await Promise.all([
         db.from('profiles').select('id,name,email,role,phone,active').not('role', 'is', null).order('name'),
         db.from('official_invites').select('email,name,role,phone').order('name'),
@@ -501,6 +566,10 @@ async function loadScorecards() {
     const boutId = val('scorecardBoutId');
     if (!boutId) {
         container.innerHTML = '<div class="empty-state"><p>Select a bout to see the judges\' cards</p></div>';
+        return;
+    }
+    if (!isStaff()) {
+        container.innerHTML = '<div class="empty-state"><p>Judges\' round-by-round cards are shown to management.</p><p><button onclick="openLoginModal()">Login to view</button></p></div>';
         return;
     }
     spinner('scorecardsList');
@@ -589,6 +658,7 @@ async function saveWeight(key) {
 }
 
 async function recalculateRankings() {
+    if (!requireStaff('weightsMessage')) return;
     const { data, error } = await db.rpc('admin_recompute_rankings');
     if (error) { alert(friendly(error)); return; }
     loadRankings();
@@ -598,10 +668,6 @@ async function recalculateRankings() {
 // ---------------------------------------------------------------- init
 window.addEventListener('load', async () => {
     await updateAuthUI();
-    if (!me) {
-        const { data: { session } } = await db.auth.getSession();
-        if (!session) openLoginModal();
-    }
     // Deferred: supabase-js must not be called inside its own auth callback.
     db.auth.onAuthStateChange(() => setTimeout(updateAuthUI, 0));
 });
