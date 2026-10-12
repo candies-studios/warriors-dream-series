@@ -152,7 +152,7 @@ begin
     select b.blue_fighter_id as a, b.red_fighter_id as c, b.winner_id
       from public.bouts b
       join public.events e on e.id = b.event_id
-     where b.result_status = 'final'
+     where b.result_status = 'final' and b.discipline = 'MMA'
        and b.result_type <> 'NO_CONTEST'
        and b.blue_fighter_id is not null and b.red_fighter_id is not null
      order by coalesce(e.event_date, b.bout_date, b.completed_at::date) nulls last,
@@ -172,13 +172,13 @@ begin
   -- Per-fight points, in fight order, for both corners.
   create temp table if not exists _acc (fighter_id uuid primary key, w int, l int, d int, mp numeric) on commit drop;
   truncate _acc;
-  delete from public.bout_points;
+  delete from public.bout_points where true;   -- Supabase requires a WHERE on every DELETE
   seq := 0;
   for r in
     select b.id, b.blue_fighter_id, b.red_fighter_id, b.winner_id, b.result_type, b.end_round
       from public.bouts b
       join public.events e on e.id = b.event_id
-     where b.result_status = 'final'
+     where b.result_status = 'final' and b.discipline = 'MMA'
        and b.blue_fighter_id is not null and b.red_fighter_id is not null
      order by coalesce(e.event_date, b.bout_date, b.completed_at::date) nulls last,
               e.starts_at nulls last, e.created_at, b.bout_number, b.completed_at nulls last, b.id
@@ -223,7 +223,7 @@ begin
       cross join lateral (values (b.blue_fighter_id), (b.red_fighter_id)) as f(fid)
       join public.fighters fx on fx.id = f.fid
       left join public.event_fighters ef on ef.event_id = b.event_id and ef.fighter_id = f.fid
-     where b.result_status = 'final'
+     where b.result_status = 'final' and b.discipline = 'MMA'
        and b.blue_fighter_id is not null and b.red_fighter_id is not null
   ),
   stats as (
@@ -285,7 +285,7 @@ begin
   delete from public.fighter_rankings fr
    where not exists (
      select 1 from public.bouts b
-      where b.result_status = 'final'
+      where b.result_status = 'final' and b.discipline = 'MMA'
         and b.blue_fighter_id is not null and b.red_fighter_id is not null
         and fr.fighter_id in (b.blue_fighter_id, b.red_fighter_id));
 
