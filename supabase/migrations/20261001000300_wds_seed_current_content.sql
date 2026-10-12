@@ -41,9 +41,12 @@ values
    E'The next generation of MMA warriors prepare for battle.\nStay tuned for the ultimate showcase of rising talent.')
 on conflict (slug) do nothing;
 
+-- Skipped once the real per-event results (migration …0600) are in.
 insert into public.events (slug, title, series, status, event_date, is_listed, description)
-values ('historical-results-import', 'WDS historical results (import)', 'other', 'completed', '2025-12-31', false,
-        'Results carried over from the original Rankings page. Unlisted; used only for rankings history.')
+select 'historical-results-import', 'WDS historical results (import)', 'other', 'completed', '2025-12-31', false,
+       'Results carried over from the original Rankings page. Unlisted; used only for rankings history.'
+ where not exists (select 1 from public.bouts b join public.events e on e.id = b.event_id
+                    where e.slug = 'wds-fight-night-16')
 on conflict (slug) do nothing;
 
 do $$
@@ -54,6 +57,10 @@ declare
   division_names constant jsonb := '{"flyweight":"Flyweight","bantamweight":"Bantamweight","featherweight":"Featherweight","lightweight":"Lightweight","welterweight":"Welterweight","lightheavyweight":"Light Heavyweight"}';
 begin
   select id into ev from public.events where slug = 'historical-results-import';
+  if ev is null then
+    raise notice 'Real results already imported; historical placeholders skipped';
+    return;
+  end if;
   if exists (select 1 from public.bouts where event_id = ev) then
     raise notice 'Historical results already imported';
     return;
