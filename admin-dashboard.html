@@ -481,6 +481,32 @@
         .pill.provisional, .pill.announced, .pill.invited { background: rgba(245,158,11,.18); color: #fbbf24; }
         .pill.live { background: rgba(215,39,42,.25); color: #ff6b6b; }
 
+        .locked-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--red);
+            border-radius: 4px;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .locked-card[hidden], #adminArea[hidden] { display: none; }
+        .locked-card h2 {
+            margin-bottom: 14px;
+            color: var(--red);
+            font-weight: 700;
+            font-size: clamp(1.3rem, 1.75vw, 1.6rem);
+            letter-spacing: .25em;
+            text-transform: uppercase;
+        }
+        .locked-card p {
+            max-width: 640px;
+            margin: 0 auto 24px;
+            color: var(--text-muted);
+            font-weight: 300;
+            font-size: 1rem;
+            line-height: 1.65;
+        }
+
         .form-hint {
             margin: -6px 0 16px;
             color: var(--text-muted);
@@ -552,8 +578,8 @@
                 <p>Role: <span class="user-role" id="userRole">-</span></p>
             </div>
             <div class="auth-buttons">
-                <button onclick="openLoginModal()">Login</button>
-                <button class="btn-secondary" onclick="logoutUser()">Logout</button>
+                <button id="loginButton" onclick="openLoginModal()">Login</button>
+                <button id="logoutButton" class="btn-secondary" onclick="logoutUser()" style="display:none">Logout</button>
             </div>
         </div>
 
@@ -578,6 +604,10 @@
             </div>
         </div>
 
+        <!-- Shown instead of the dashboard until management logs in -->
+        <div id="lockedNotice" class="locked-card"></div>
+
+        <div id="adminArea" hidden>
         <!-- Tabs -->
         <div class="tabs">
             <button class="tab-button active" onclick="switchTab('fighters')">Fighters</button>
@@ -857,6 +887,7 @@
                 <div id="weightsMessage"></div>
                 <div id="weightsList"></div>
             </div>
+        </div>
         </div>
     </div>
 
