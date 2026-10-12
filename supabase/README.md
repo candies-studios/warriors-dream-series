@@ -1,6 +1,6 @@
 # WDS ⇄ ScoreHUB ⇄ Rankings — shared database
 
-One Supabase project (`qjqpquwcfarvyjzfzjcb`) is now the single source of truth for
+One Supabase project (`zxqaolyckzgaqohpiwtk`, "WDS") is now the single source of truth for
 **events, fighters, fights, judges' scores, results and rankings**. Nothing is copied
 between sites any more:
 
@@ -67,6 +67,9 @@ the admin dashboard (Rankings tab); rankings recalculate immediately.
    3. `supabase/migrations/20261001000300_wds_seed_current_content.sql`
    4. `supabase/migrations/20261008000400_wds_committee_ranking_formula.sql`
    5. `supabase/migrations/20261008000500_wds_upcoming_events_oct.sql`
+   6. `supabase/migrations/20261009000600_wds_import_past_results.sql`
+   7. `supabase/migrations/20261012000700_wds_import_fight_sheets.sql`
+   8. `supabase/migrations/20261012000800_wds_import_fn1_fn2_fn11_rs6.sql`
 
    Safe on the existing project: tables from the old dashboard/ScoreHUB schema with
    the same names are renamed to `legacy_<name>_<date>` (kept, never dropped). All
@@ -152,9 +155,28 @@ API and live-sync socket from this database. See `SUPABASE-BRIDGE.md` in that re
 - **Admin:** everything, plus reopen finalized results, delete events, change roles.
 - Roles come only from management invites — never from what a user types.
 
+- `…0600_wds_import_past_results.sql` — the real fight cards of FN16, FN17, RS7 and FN18
+  (46 fights, method/round/time from the official results pages) replace the 34
+  placeholder fights; merges "Ashok Bagade"→"Ashok Bagde" and "Sagar Dange"→"Sagar Ramdas Dange".
+
+- `…0700_wds_import_fight_sheets.sql` — 15 more events from the WDS fight sheets (Fight Night 4–10,
+  12–14; Rising Star 1–5, 166 fights) with method/round/time, gym and hometown; merges duplicate
+  spellings of fighters; rankings count MMA fights only (K1 bouts are listed but not ranked).
+
+- `…0800_wds_import_fn1_fn2_fn11_rs6.sql` — Fight Night 1, 2, 11 and Rising Star 6 (34 fights).
+
 ## Known follow-ups
-- Some imported names are placeholders from the old Rankings page (`Opponent1…6`,
-  `OpponentRS7-1…4`), and "Ashok Bagde"/"Ashok Bagade" are two spellings. Fix them in
-  Fighters; rankings update by themselves.
+- No results yet for Fight Night 15 (there was no Fight Night 3).
+- FN11 Mrutunjay Madhal vs Pravin Gupta: decision type missing → provisional.
+- FN8 Siddharth Kothapalli vs Waheeb Wakeel: method missing on the sheet → provisional.
+- RS2: the Under-16 bout was not imported; Syed Ismail vs Viraj Dhore (walkover) is a cancelled bout.
+- Merged as one fighter (check): Satyaa/Satyaprakash Rajbhar, Shabrish Ayyanar/A Shabarish,
+  Tulashidas Meetai/Ningombam, Handsome Haobijam/Singh, Bhuwan Rai/Bhuvan R, Anubhav Kumar/Kashyap,
+  Abhijit Saini/Abhijeet Singh Saini, Mritunjay/Mrutunjay Madhal. Kept separate: Chandiran Thirubala and
+  Thirubalachandran D; Sangram Singh and Sangramsingh Godse; Akash Chawhan and Akash Chauhan.
+- Rising Star 6 has no fights yet (its results page could not be read) — add them in the dashboard.
+- RS7 Sameer Khan vs Vishal Shetty is *provisional*: the results page names both as winner.
+  Confirm and Finalize it in the dashboard.
+- FN16 Qaazim Sheikh vs Mohit Dagar has no round recorded (round-3 weight is used).
 - The footer "Rankings" link on Home/Events still points to the external fightrank site.
 - ScoreHUB's earlier scorecards live only in each tablet's browser storage.
