@@ -76,6 +76,39 @@
     if (active && active.dataset.filter && active.dataset.filter !== 'all') active.click();
   }
 
+  // Past events: show the first rows, then "Show More" reveals the rest page by page.
+  function showMore(grid, step) {
+    var cards = Array.prototype.slice.call(grid.querySelectorAll('.ev-card'));
+    var wrap = grid.parentNode.querySelector('.wds-more');
+    if (cards.length <= step) { if (wrap) wrap.remove(); return; }
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.className = 'wds-more';
+      wrap.innerHTML = '<button type="button" class="wds-more-btn"></button>';
+      grid.parentNode.insertBefore(wrap, grid.nextSibling);
+    }
+    var btn = wrap.querySelector('button');
+    var shown = Math.min(grid.__wdsShown || step, cards.length);
+    function apply() {
+      cards.forEach(function (c, i) { c.classList.toggle('wds-hidden', i >= shown); });
+      var all = shown >= cards.length;
+      btn.textContent = all ? 'Show Less' : 'Show More (' + (cards.length - shown) + ')';
+      btn.setAttribute('aria-expanded', all ? 'true' : 'false');
+      grid.__wdsShown = shown;
+    }
+    btn.onclick = function () {
+      if (shown >= cards.length) {
+        shown = step;
+        apply();
+        grid.closest('section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        shown = Math.min(shown + step, cards.length);
+        apply();
+      }
+    };
+    apply();
+  }
+
   // ---------------------------------------------------------------- "Upcoming" blocks
   function linkButton(existing, href, label, className) {
     var a = existing && existing.tagName === 'A' ? existing : document.createElement('a');
@@ -300,6 +333,7 @@
         return y === year || e.status !== 'completed';
       });
       renderGrid(grid, season, counts);
+      if (pastOnly) showMore(grid, 6);
       var title = document.querySelector('.season-title');
       if (title && /\d{4}/.test(title.textContent)) title.textContent = title.textContent.replace(/\d{4}/, String(year));
     }
