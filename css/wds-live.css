@@ -138,3 +138,23 @@ a.eu-cta:hover { background: var(--red, #d7272a); color: #fff; }
 .wds-points em { font-style: normal; }
 .wds-points em.is-up { color: #34d399; }
 .wds-points em.is-down { color: #ff6b6b; }
+
+/* Events page: "Show More" under the Past Events grid */
+.ev-card.wds-hidden { display: none; }
+.wds-more { display: flex; justify-content: center; margin-top: clamp(28px, 3.5vw, 44px); }
+.wds-more-btn {
+  min-width: 240px;
+  padding: 18px 34px 15px;
+  background: #121212;
+  border: 1px solid #2c2c2c;
+  color: #fff;
+  font-family: 'Teko', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  line-height: 1;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background .2s ease, border-color .2s ease;
+}
+.wds-more-btn:hover, .wds-more-btn:focus-visible { background: var(--red, #d7272a); border-color: var(--red, #d7272a); outline: none; }
