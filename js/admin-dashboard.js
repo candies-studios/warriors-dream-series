@@ -37,7 +37,8 @@ function spinner(id) {
 
 function friendly(error) {
     const msg = (error && error.message) || String(error);
-    if (/row-level security|permission denied/i.test(msg)) return 'Your account does not have permission for that. Sign in as Admin or Promoter.';
+    if (isPermissionError(error)) return 'Please log in with an Admin or Promoter account to do this.';
+    if (/JWT expired|invalid JWT/i.test(msg)) return 'Your session has expired — please log in again.';
     return msg;
 }
 
@@ -72,14 +73,37 @@ function switchTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
     document.getElementById(tabName).classList.add('active');
-    if (window.event && window.event.target) window.event.target.classList.add('active');
+    const btn = document.querySelector(`.tab-button[onclick*="'${tabName}'"]`);
+    if (btn) btn.classList.add('active');
+    loadTab(tabName);
+}
 
+function activeTab() {
+    const el = document.querySelector('.tab-content.active');
+    return el ? el.id : 'fighters';
+}
+
+// Data is loaded only for signed-in management; logged-out visitors see the
+// sign-in panel instead of database errors.
+function loadTab(tabName) {
+    if (!isStaff()) return;
     if (tabName === 'fighters') loadFighters();
     else if (tabName === 'events') loadEvents();
     else if (tabName === 'bouts') { loadEvents(); loadFighters(); loadBouts(); }
     else if (tabName === 'judges') loadJudges();
     else if (tabName === 'scorecards') { loadBouts(); loadScorecards(); }
     else if (tabName === 'rankings') loadRankings();
+}
+
+// Shown in a list area when a request fails. A permission error means the
+// session ended or the account lost access: re-check and show the sign-in panel.
+function listError(container, error) {
+    if (container) container.innerHTML = `<div class="message error">${esc(friendly(error))}</div>`;
+    if (isPermissionError(error)) updateAuthUI();
+}
+function isPermissionError(error) {
+    const msg = (error && (error.message || error.code)) || '';
+    return /row-level security|permission denied|42501|JWT|not authorized/i.test(String(msg) + ' ' + ((error && error.code) || ''));
 }
 
 // ---------------------------------------------------------------- auth
@@ -113,7 +137,6 @@ async function loginUser() {
         }
         closeLoginModal();
         await updateAuthUI();
-        loadFighters();
     } catch (err) {
         showMessage('loginMessage', 'Error: ' + err.message, 'error');
     }
@@ -128,6 +151,7 @@ async function logoutUser() {
     await updateAuthUI();
 }
 
+let wasStaff = null;
 async function updateAuthUI() {
     const { data: { session } } = await db.auth.getSession();
     me = null;
@@ -137,6 +161,21 @@ async function updateAuthUI() {
     }
     document.getElementById('currentUser').textContent = session ? (me ? `${me.name} (${session.user.email})` : session.user.email) : 'Not logged in';
     document.getElementById('userRole').textContent = me ? me.role : (session ? 'No role — ask an admin' : '-');
+    document.getElementById('loginButton').style.display = session ? 'none' : '';
+    document.getElementById('logoutButton').style.display = session ? '' : 'none';
+
+    // Management sees the dashboard; everyone else sees why not.
+    const staff = isStaff();
+    document.getElementById('adminArea').hidden = !staff;
+    const notice = document.getElementById('lockedNotice');
+    notice.hidden = staff;
+    if (!staff) {
+        notice.innerHTML = !session
+            ? '<h2>Management login</h2><p>Log in with your Admin or Promoter account to manage events, fighters, bouts, officials, results and rankings.</p><button onclick="openLoginModal()">Login</button>'
+            : `<h2>No management access</h2><p>You are signed in as ${esc(session.user.email)}${me ? ' (' + esc(me.role) + ')' : ''}. This dashboard is for Admin and Promoter accounts — judges and referees score in ScoreHUB. Ask an admin to change your role, or log in with another account.</p><button class="btn-secondary" onclick="logoutUser()">Logout</button>`;
+    }
+    if (staff && wasStaff !== true) loadTab(activeTab());
+    wasStaff = staff;
 }
 
 function isStaff() { return me && (me.role === 'ADMIN' || me.role === 'PROMOTER'); }
@@ -176,7 +215,7 @@ async function addFighter() {
         weight_class: orNull(val('fighterWeightClass')),
         born_year: bornYear ? parseInt(bornYear, 10) : null,
     }]);
-    if (error) { showMessage('fighterMessage', 'Error: ' + friendly(error), 'error'); return; }
+    if (error) { showMessage('fighterMessage', friendly(error), 'error'); return; }
     showMessage('fighterMessage', 'Fighter added successfully!', 'success');
     ['fighterFirstName', 'fighterLastName', 'fighterNickname', 'fighterCountry', 'fighterWeightClass', 'fighterBornYear'].forEach(id => setVal(id, ''));
     loadFighters();
@@ -187,7 +226,7 @@ async function loadFighters() {
     const { data, error } = await db.from('fighters')
         .select('id,public_id,name,nickname,country,weight_class,born_year,team')
         .order('name');
-    if (error) { container.innerHTML = `<div class="message error">Error: ${esc(error.message)}</div>`; return; }
+    if (error) { listError(container, error); return; }
     updateDropdown('boutFighter1Id', data);
     updateDropdown('boutFighter2Id', data);
     if (!data.length) {
@@ -228,7 +267,7 @@ async function saveEvent() {
         ? db.from('events').update(row).eq('id', editingEventId).select('status')
         : db.from('events').insert([{ ...row, created_by: me.id }]).select('status');
     const { data, error } = await query;
-    if (error) { showMessage('eventMessage', 'Error: ' + friendly(error), 'error'); return; }
+    if (error) { showMessage('eventMessage', friendly(error), 'error'); return; }
     const status = data && data[0] ? data[0].status : row.status;
     const note = status !== row.status ? ` Status is now "${status}".` : '';
     showMessage('eventMessage', (editingEventId ? 'Event updated — the website and ScoreHUB show it now.' : 'Event created!') + note, 'success');
@@ -238,7 +277,7 @@ async function saveEvent() {
 
 async function editEvent(id) {
     const { data: ev, error } = await db.from('events').select('*').eq('id', id).single();
-    if (error) { showMessage('eventMessage', 'Error: ' + error.message, 'error'); return; }
+    if (error) { showMessage('eventMessage', friendly(error), 'error'); return; }
     editingEventId = id;
     setVal('eventTitle', ev.title);
     setVal('eventSeries', ev.series);
@@ -270,7 +309,7 @@ async function finalizeEvent(id) {
     if (!requireStaff('eventMessage')) return;
     if (!confirm('Publish all provisional results of this event and update the rankings?')) return;
     const { data, error } = await db.rpc('finalize_event_results', { p_event: id });
-    if (error) { showMessage('eventMessage', 'Error: ' + friendly(error), 'error'); return; }
+    if (error) { showMessage('eventMessage', friendly(error), 'error'); return; }
     showMessage('eventMessage', `${data} result(s) finalized. Rankings recalculated.`, 'success');
     loadEvents();
 }
@@ -280,7 +319,7 @@ async function loadEvents() {
     const { data, error } = await db.from('events')
         .select('id,public_id,title,status,event_date,start_time,venue,city,is_listed,bouts(count)')
         .order('event_date', { ascending: false, nullsFirst: true });
-    if (error) { if (container) container.innerHTML = `<div class="message error">Error: ${esc(error.message)}</div>`; return; }
+    if (error) { listError(container, error); return; }
     const listed = data.filter(e => e.is_listed);
     updateDropdown('boutEventId', listed, 'id', e => `${e.title} (${e.status})`);
     if (!container) return;
@@ -327,7 +366,7 @@ async function addBout() {
             bout_type: val('boutType') || 'AMATEUR',
         }]));
     }
-    if (error) { showMessage('boutMessage', 'Error: ' + friendly(error), 'error'); return; }
+    if (error) { showMessage('boutMessage', friendly(error), 'error'); return; }
     showMessage('boutMessage', 'Bout created — it appears in ScoreHUB now. Seat the judges there.', 'success');
     setVal('boutNumber', String(parseInt(val('boutNumber') || '1', 10) + 1));
     setVal('boutFighter1Id', '');
@@ -348,7 +387,7 @@ async function loadBouts() {
         .limit(200);
     if (eventId) query = query.eq('event_id', eventId).order('bout_number');
     const { data, error } = await query;
-    if (error) { if (container) container.innerHTML = `<div class="message error">Error: ${esc(error.message)}</div>`; return; }
+    if (error) { listError(container, error); return; }
     updateDropdown('scorecardBoutId', data, 'id', boutLabel);
     if (!container) return;
     if (!data.length) {
@@ -371,7 +410,7 @@ async function loadBouts() {
 async function finalizeBout(id) {
     if (!requireStaff('boutMessage')) return;
     const { error } = await db.rpc('finalize_bout_result', { p_bout: id });
-    if (error) { showMessage('boutMessage', 'Error: ' + friendly(error), 'error'); return; }
+    if (error) { showMessage('boutMessage', friendly(error), 'error'); return; }
     showMessage('boutMessage', 'Result finalized — published on the website and rankings updated.', 'success');
     loadBouts();
 }
@@ -382,7 +421,7 @@ async function finalizeSelectedEvent() {
     if (!requireStaff('boutMessage')) return;
     if (!confirm('Publish all provisional results of this event and update the rankings?')) return;
     const { data, error } = await db.rpc('finalize_event_results', { p_event: eventId });
-    if (error) { showMessage('boutMessage', 'Error: ' + friendly(error), 'error'); return; }
+    if (error) { showMessage('boutMessage', friendly(error), 'error'); return; }
     showMessage('boutMessage', `${data} result(s) finalized. Rankings recalculated.`, 'success');
     loadBouts();
 }
@@ -390,7 +429,7 @@ async function finalizeSelectedEvent() {
 async function reopenBout(id) {
     if (!confirm('Reopen this finalized result? It will be removed from the website and the rankings until finalized again.')) return;
     const { error } = await db.rpc('reopen_bout_result', { p_bout: id });
-    if (error) { showMessage('boutMessage', 'Error: ' + friendly(error), 'error'); return; }
+    if (error) { showMessage('boutMessage', friendly(error), 'error'); return; }
     showMessage('boutMessage', 'Result reopened.', 'success');
     loadBouts();
 }
@@ -399,7 +438,7 @@ async function deleteBout(id) {
     if (!requireStaff('boutMessage')) return;
     if (!confirm('Delete this bout and any scorecards entered for it?')) return;
     const { data, error } = await db.from('bouts').delete().eq('id', id).select('id');
-    if (error || !data.length) { showMessage('boutMessage', 'Error: ' + friendly(error || { message: 'Bout could not be deleted' }), 'error'); return; }
+    if (error || !data.length) { showMessage('boutMessage', friendly(error || { message: 'Bout could not be deleted' }), 'error'); return; }
     showMessage('boutMessage', 'Bout deleted.', 'success');
     loadBouts();
 }
@@ -415,7 +454,7 @@ async function addJudge() {
         return;
     }
     const { error } = await db.from('official_invites').upsert([{ email, name, role, phone: orNull(val('judgePhone')), invited_by: me.id }]);
-    if (error) { showMessage('judgeMessage', 'Error: ' + friendly(error), 'error'); return; }
+    if (error) { showMessage('judgeMessage', friendly(error), 'error'); return; }
     showMessage('judgeMessage', `${name} added. They sign in to ScoreHUB with their name, role and a PIN they choose.`, 'success');
     ['judgeName', 'judgeEmail', 'judgePhone'].forEach(id => setVal(id, ''));
     loadJudges();
@@ -430,7 +469,7 @@ async function deactivateOfficial(id) {
 
 async function removeInvite(email) {
     const { error } = await db.from('official_invites').delete().eq('email', email);
-    if (error) { showMessage('judgeMessage', 'Error: ' + friendly(error), 'error'); return; }
+    if (error) { showMessage('judgeMessage', friendly(error), 'error'); return; }
     loadJudges();
 }
 
@@ -440,7 +479,7 @@ async function loadJudges() {
         db.from('profiles').select('id,name,email,role,phone,active').not('role', 'is', null).order('name'),
         db.from('official_invites').select('email,name,role,phone').order('name'),
     ]);
-    if (error) { container.innerHTML = `<div class="message error">Error: ${esc(error.message)}</div>`; return; }
+    if (error) { listError(container, error); return; }
     const known = new Set((people || []).map(p => (p.email || '').toLowerCase()));
     const rows = (people || []).map(p => ({ ...p, state: p.active ? 'registered' : 'inactive' }))
         .concat((invites || []).filter(i => !known.has(i.email)).map(i => ({ ...i, state: 'invited' })));
@@ -469,7 +508,7 @@ async function loadScorecards() {
         .select('round_number,blue_score,red_score,submitted_at,judge:profiles(name)')
         .eq('bout_id', boutId)
         .order('round_number');
-    if (error) { container.innerHTML = `<div class="message error">Error: ${esc(friendly(error))}</div>`; return; }
+    if (error) { listError(container, error); return; }
     if (!data.length) {
         container.innerHTML = '<div class="empty-state"><p>No scorecards submitted yet</p></div>';
         return;
@@ -496,7 +535,7 @@ async function loadRankings() {
     query = weightClass ? query.eq('division_name', weightClass).order('division_rank') : query.order('overall_rank');
     const { data, error } = await query;
     loadWeights();
-    if (error) { container.innerHTML = `<div class="message error">Error: ${esc(error.message)}</div>`; return; }
+    if (error) { listError(container, error); return; }
     if (!data.length) {
         container.innerHTML = '<div class="empty-state"><p>No rankings yet</p><p>Finalize some results to see rankings</p></div>';
         return;
@@ -520,7 +559,7 @@ async function loadWeights() {
     const container = document.getElementById('weightsList');
     if (!container) return;
     const { data, error } = await db.from('ranking_method_weights').select('result_type,round_no,weight,confirmed,note');
-    if (error) { container.innerHTML = `<div class="message error">Error: ${esc(error.message)}</div>`; return; }
+    if (error) { listError(container, error); return; }
     data.sort((a, b) => METHOD_ORDER.indexOf(a.result_type) - METHOD_ORDER.indexOf(b.result_type) || a.round_no - b.round_no);
     const editable = isStaff();
     container.innerHTML = '<table class="data-table"><thead><tr><th>Win method</th><th>Round</th><th>Weight</th><th>Status</th><th></th></tr></thead><tbody>' +
@@ -544,7 +583,7 @@ async function saveWeight(key) {
     const { data, error } = await db.from('ranking_method_weights')
         .update({ weight, confirmed: true })
         .eq('result_type', resultType).eq('round_no', Number(roundNo)).select('result_type');
-    if (error || !data.length) { showMessage('weightsMessage', 'Error: ' + friendly(error || { message: 'permission denied' }), 'error'); return; }
+    if (error || !data.length) { showMessage('weightsMessage', friendly(error || { message: 'permission denied' }), 'error'); return; }
     showMessage('weightsMessage', `${METHOD_LABELS[resultType] || resultType}${Number(roundNo) ? ' R' + roundNo : ''} = ${weight}. Rankings recalculated.`, 'success');
     loadRankings();
 }
@@ -559,7 +598,10 @@ async function recalculateRankings() {
 // ---------------------------------------------------------------- init
 window.addEventListener('load', async () => {
     await updateAuthUI();
-    loadFighters();
+    if (!me) {
+        const { data: { session } } = await db.auth.getSession();
+        if (!session) openLoginModal();
+    }
     // Deferred: supabase-js must not be called inside its own auth callback.
     db.auth.onAuthStateChange(() => setTimeout(updateAuthUI, 0));
 });
