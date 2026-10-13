@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fighter — Warriors Dream Series</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/images/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="../assets/images/favicon-192x192.png">
+<link rel="apple-touch-icon" href="../assets/images/apple-touch-icon.png">
+<style>
+    /* Fighter profile — layout modelled on ufc.com athlete pages */
+    .fp-main {
+      --fp-ink: #191919;
+      --fp-text: #585b63;
+      --fp-muted: #8a8d93;
+      --fp-red: #d20a0a;
+      --fp-line: #e2e2e2;
+      --fp-soft: #f6f6f6;
+      --fp-dark: #19191e;
+      background: #ffffff;
+      color: var(--fp-text);
+      font-family: 'Roboto Condensed', 'Arial Narrow', Arial, sans-serif;
+      padding-bottom: 40px;
+    }
+    .fp-wrap { max-width: 1140px; margin: 0 auto; padding: 0 24px; }
+    .fp-cond { font-family: 'Oswald', 'Arial Narrow', sans-serif; }
+
+    /* ---- Hero (dark band) ---- */
+    .fp-hero { background: var(--fp-dark); color: #fafbfd; overflow: hidden; }
+    .fp-hero .fp-wrap {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 330px) minmax(0, 1fr);
+      gap: 24px;
+      align-items: end;
+      min-height: 440px;
+      padding-top: 40px;
+    }
+    .fp-back {
+      display: inline-block;
+      margin-bottom: 22px;
+      font-size: 12px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: #a4a7ac;
+    }
+    .fp-back:hover { color: #fff; }
+    .fp-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+    .fp-tag {
+      background: rgba(255,255,255,0.15);
+      color: #fafbfd;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 2px;
+    }
+    .fp-nick {
+      font-family: 'Oswald', 'Arial Narrow', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+      color: #a4a7ac;
+      margin: 0 0 6px;
+    }
+    .fp-name {
+      font-family: 'Oswald', 'Arial Narrow', sans-serif;
+      font-size: 48px;
+      line-height: 1.05;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #fafbfd;
+      margin: 0 0 18px;
+      overflow-wrap: anywhere;
+    }
+    .fp-division, .fp-record { font-size: 18px; margin: 0; color: #fafbfd; }
+    .fp-record { margin-top: 4px; }
+    .fp-hero-left { padding-bottom: 40px; }
+    .fp-stats { display: flex; gap: 0; margin-top: 28px; }
+    .fp-stat { padding: 0 24px; text-align: center; border-left: 1px solid rgba(255,255,255,0.18); }
+    .fp-stat:first-child { padding-left: 0; border-left: 0; }
+    .fp-stat-num {
+      font-family: 'Oswald', 'Arial Narrow', sans-serif;
+      font-size: 64px;
+      line-height: 1;
+      letter-spacing: 2px;
+      color: #fafbfd;
+      padding-bottom: 10px;
+      border-bottom: 3px solid var(--fp-red);
+      display: inline-block;
+      min-width: 48px;
+    }
+    .fp-stat-label {
+      margin-top: 10px;
+      font-size: 13px;
+      text-transform: uppercase;
+      line-height: 1.25;
+      color: #fafbfd;
+    }
+    .fp-photo { align-self: end; display: flex; justify-content: center; }
+    .fp-photo img { max-height: 420px; max-width: 100%; display: block; object-fit: contain; object-position: bottom; }
+    .fp-photo svg { width: 230px; height: 300px; color: #2c2c33; display: block; }
+    .fp-hero-right { padding-bottom: 40px; display: flex; flex-direction: column; gap: 16px; }
+    .fp-box { border: 1px solid rgba(255,255,255,0.14); padding: 16px 18px; }
+    .fp-box-label {
+      font-size: 11px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: #a4a7ac;
+      margin: 0 0 8px;
+    }
+    .fp-box-title {
+      font-family: 'Oswald', 'Arial Narrow', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #fafbfd;
+      margin: 0;
+    }
+    .fp-box-title .vs { color: var(--fp-red); margin: 0 4px; }
+    .fp-box-meta { font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: #a4a7ac; margin-top: 6px; }
+    .fp-box-score { margin-top: 8px; font-size: 13px; color: #fafbfd; }
+    .fp-box-score strong { font-family: 'Oswald', 'Arial Narrow', sans-serif; font-size: 22px; margin-right: 6px; }
+    .fp-history-btn {
+      display: inline-block;
+      text-align: center;
+      border: 2px solid #fafbfd;
+      color: #fafbfd;
+      padding: 12px 18px;
+      font-family: 'Oswald', 'Arial Narrow', sans-serif;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-size: 14px;
+    }
+    .fp-history-btn:hover { background: #fafbfd; color: var(--fp-dark); }
+
+    /* ---- Sections ---- */
+    .fp-section { padding: 56px 0 0; }
+    .fp-h2 {
+      font-family: 'Oswald', 'Arial Narrow', sans-serif;
+      font-size: 40px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--fp-ink);
+      margin: 0 0 26px;
+    }
+
+    /* Stats & records */
+    .fp-stats-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+    .fp-card { border: 1px solid var(--fp-line); padding: 22px; }
+    .fp-card-title {
+      font-family: 'Oswald', 'Arial Narrow', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--fp-ink);
+      margin: 0 0 18px;
+    }
+    .fp-bar { margin-bottom: 14px; }
+    .fp-bar-head { display: flex; justify-content: space-between; font-size: 13px; text-transform: uppercase; color: var(--fp-ink); margin-bottom: 6px; }
+    .fp-bar-head span:last-child { color: var(--fp-muted); }
+    .fp-bar-track { height: 6px; background: var(--fp-soft); }
+    .fp-bar-fill { height: 100%; background: var(--fp-red); }
+    .fp-big { font-family: 'Oswald', 'Arial Narrow', sans-serif; font-size: 44px; line-height: 1; color: var(--fp-ink); margin: 0; }
+    .fp-big-label { font-size: 13px; text-transform: uppercase; color: var(--fp-muted); margin: 6px 0 18px; }
+    .fp-split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* Athlete record */
+    .fp-filter { display: flex; gap: 10px; flex-wrap: wrap; margin: -8px 0 22px; }
+    .fp-filter button {
+      border: 2px solid var(--fp-line);
+      background: #fff;
+      color: var(--fp-ink);
+      padding: 8px 16px;
+      font-family: 'Oswald', 'Arial Narrow', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .6px;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .fp-filter button.active { border-color: var(--fp-ink); background: var(--fp-ink); color: #fff; }
+    .fp-fight {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      padding: 22px 0;
+      border-bottom: 1px solid var(--fp-line);
+    }
+    .fp-fight[hidden] { display: none; }
+    .fp-matchup { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; align-items: end; }
+    .fp-head { position: relative; height: 120px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; background: var(--fp-soft); }
+    .fp-head img { max-height: 120px; max-width: 100%; object-fit: contain; object-position: bottom; display: block; }
+    .fp-head svg { width: 80px; height: 100px; color: #d9d9db; display: block; }
+    .fp-plaque {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      transform: translateX(-50%);
+      background: var(--fp-red);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 14px;
+      letter-spacing: .5px;
+    }
+    .fp-plaque.draw, .fp-plaque.nc { background: #585b63; }
+    .fp-fight-title {
+      font-family: 'Oswald', 'Arial Narrow', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--fp-ink);
+      margin: 0;
+      line-height: 1.2;
+    }
+    .fp-fight-title a:hover { color: var(--fp-red); }
+    .fp-fight-title .vs { color: var(--fp-muted); font-weight: 500; margin: 0 6px; font-size: 16px; }
+    .fp-fight-date { font-size: 13px; color: var(--fp-text); margin: 6px 0 0; }
+    .fp-fight-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .fp-chip { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; padding: 2px 8px; border: 1px solid var(--fp-line); color: var(--fp-text); }
+    .fp-chip.pro { border-color: var(--fp-ink); color: var(--fp-ink); }
+    .fp-chip.result-W { background: #0e8a5f; border-color: #0e8a5f; color: #fff; }
+    .fp-chip.result-L { background: var(--fp-red); border-color: var(--fp-red); color: #fff; }
+    .fp-chip.result-D, .fp-chip.result-NC, .fp-chip.result-up { background: #585b63; border-color: #585b63; color: #fff; }
+    .fp-results { display: flex; flex-wrap: wrap; gap: 28px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--fp-line); }
+    .fp-result-label { font-size: 11px; color: var(--fp-muted); text-transform: capitalize; }
+    .fp-result-text { font-family: 'Oswald', 'Arial Narrow', sans-serif; font-size: 14px; font-weight: 700; text-transform: uppercase; color: var(--fp-ink); }
+    .fp-fight-links { display: flex; flex-direction: column; gap: 14px; text-align: right; }
+    .fp-fight-links a {
+      font-family: 'Oswald', 'Arial Narrow', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--fp-ink);
+      white-space: nowrap;
+    }
+    .fp-fight-links a:hover { color: var(--fp-red); }
+
+    /* Info */
+    .fp-info { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--fp-line); }
+    .fp-info div { padding: 18px 16px 18px 0; border-bottom: 1px solid var(--fp-line); }
+    .fp-info dt { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--fp-muted); margin: 0 0 6px; }
+    .fp-info dd { margin: 0; font-family: 'Oswald', 'Arial Narrow', sans-serif; font-size: 18px; text-transform: uppercase; color: var(--fp-ink); overflow-wrap: anywhere; }
+    .fp-info dd a { color: var(--fp-red); }
+
+    .fp-state { padding: 120px 24px; text-align: center; color: var(--fp-text); font-size: 16px; }
+    .fp-state a { color: var(--fp-red); font-weight: 700; }
+
+    @media (max-width: 960px) {
+      .fp-hero .fp-wrap { grid-template-columns: minmax(0, 1fr) minmax(0, 260px); }
+      .fp-hero-right { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; padding-bottom: 32px; }
+      .fp-hero-right > * { flex: 1 1 220px; }
+      .fp-stats-grid { grid-template-columns: 1fr 1fr; }
+      .fp-info { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .fp-fight { grid-template-columns: 200px minmax(0, 1fr); }
+      .fp-fight-links { grid-column: 2; flex-direction: row; text-align: left; gap: 22px; }
+    }
+    @media (max-width: 640px) {
+      .fp-wrap { padding: 0 16px; }
+      .fp-hero .fp-wrap { grid-template-columns: minmax(0, 1fr); padding-top: 28px; gap: 0; }
+      .fp-photo.no-photo { display: none; }
+      .fp-photo img { max-height: 300px; }
+      .fp-photo svg { width: 160px; height: 200px; }
+      .fp-hero-left { padding-bottom: 24px; }
+      .fp-name { font-size: 38px; }
+      .fp-stat { padding: 0 16px; }
+      .fp-stat-num { font-size: 48px; }
+      .fp-h2 { font-size: 30px; }
+      .fp-stats-grid { grid-template-columns: 1fr; }
+      .fp-fight { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+      .fp-matchup { max-width: 280px; }
+      .fp-fight-links { grid-column: 1; }
+      .fp-fight-title { font-size: 19px; }
+      .fp-info { grid-template-columns: minmax(0, 1fr); }
+    }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="../" class="site-logo"><img src="../assets/images/logo.png" alt="Warriors Dream Series"></a>
+    <nav class="site-nav" aria-label="Primary navigation">
+      <ul>
+        <li><a href="../">Home</a></li>
+        <li><a href="events.html">Events</a></li>
+        <li><a class="active" href="rankings.html">Rankings</a></li>
+        <li><a href="about.html">About Us</a></li>
+        <li><a href="contact.html">Contact Us</a></li>
+        <li><a href="media-room.html">Media Room</a></li>
+      </ul>
+    </nav>
+    <button type="button" class="header-cta js-community-open" aria-haspopup="dialog" aria-controls="community-modal">
+      <svg class="cta-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></svg>
+      <span class="cta-label">Warrior Community</span>
+    </button>
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+  </div>
+</header>
+
+<div class="community-modal" id="community-modal" role="dialog" aria-modal="true" aria-labelledby="community-title" hidden>
+  <div class="community-backdrop js-community-close"></div>
+  <div class="community-dialog">
+    <button type="button" class="community-close js-community-close" aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+    </button>
+    <div class="community-frame">
+      <h2 id="community-title" class="community-title">Stay Connected</h2>
+      <p class="community-text">Get instant fight results and event details.</p>
+      <a class="community-btn community-btn--whatsapp" href="https://chat.whatsapp.com/F9RTQZnkuSt49lgWaZDePI?mode=gi_t" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.2a9.7 9.7 0 0 0-8.4 14.6L2.2 21.8l5.1-1.3A9.7 9.7 0 1 0 12 2.2zm0 17.7a8 8 0 0 1-4.1-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 19.9zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.8.9c-.1.2-.3.2-.5.1a6.6 6.6 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.1 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.5-.4h-.5a.9.9 0 0 0-.7.3 2.8 2.8 0 0 0-.9 2.1 4.9 4.9 0 0 0 1 2.6 11.2 11.2 0 0 0 4.3 3.8c1.6.7 2.2.7 3 .6a2.6 2.6 0 0 0 1.7-1.2 2.1 2.1 0 0 0 .2-1.2c-.1-.1-.3-.2-.5-.3z"/></svg>
+        <span>Rising Star WhatsApp Updates</span>
+      </a>
+      <a class="community-btn community-btn--instagram" href="https://www.instagram.com/channel/AbYt6bfYlB0ADSEK/?igsh=YnhvdHJtcGRzMmR4" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.3" fill="currentColor"/></svg>
+        <span>Rising Star Instagram Broadcast</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<main class="fp-main" id="fighterRoot">
+  <div class="fp-state" id="fpState">Loading fighter…</div>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-content">
+    <a class="footer-brand" href="../">
+      <img src="../assets/images/footer-logo.png" alt="Warriors Dream Series">
+    </a>
+
+    <nav class="footer-nav" aria-label="Footer navigation">
+      <a href="../">Home</a>
+      <a href="events.html">Events</a>
+      <a class="active" href="rankings.html">Rankings</a>
+      <a href="about.html">About Us</a>
+      <a href="contact.html">Contact Us</a>
+      <a href="media-room.html">Media Room</a>
+    </nav>
+
+    <div class="footer-socials">
+      <a href="https://www.instagram.com/warriors_dream_series/" target="_blank" rel="noopener" aria-label="Instagram">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.3" fill="currentColor"/></svg>
+      </a>
+      <a href="https://www.facebook.com/people/Warriors-Dream-Series/61588120785459/" target="_blank" rel="noopener" aria-label="Facebook">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="wds-fb-m"><rect width="24" height="24" fill="#fff"/><path d="M13.4 23v-8.2h2.7l.4-3.2h-3.1V9.6c0-.9.3-1.6 1.6-1.6h1.7V5.2c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.5-4 4.1v2.4H7.6v3.2h2.7V23z" fill="#000"/></mask></defs><circle cx="12" cy="12" r="11" fill="currentColor" mask="url(#wds-fb-m)"/></svg>
+      </a>
+      <a href="https://www.linkedin.com/company/warriors-dream-series" target="_blank" rel="noopener" aria-label="LinkedIn">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="wds-li-m"><rect width="24" height="24" fill="#fff"/><rect x="5.6" y="9.4" width="2.9" height="9" fill="#000"/><circle cx="7.05" cy="6.6" r="1.7" fill="#000"/><path d="M10.4 9.4h2.8v1.3c.4-.8 1.4-1.5 2.9-1.5 3 0 3.5 1.9 3.5 4.4v4.8h-2.9v-4.3c0-1 0-2.4-1.5-2.4s-1.8 1.1-1.8 2.3v4.4h-2.9z" fill="#000"/></mask></defs><rect x="2" y="2" width="20" height="20" rx="2.5" fill="currentColor" mask="url(#wds-li-m)"/></svg>
+      </a>
+      <a href="https://www.youtube.com/@WarriorsDreamSeries" target="_blank" rel="noopener" aria-label="YouTube">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><defs><mask id="wds-yt-m"><rect width="24" height="24" fill="#fff"/><path d="M10 8.6v6.8l5.8-3.4z" fill="#000"/></mask></defs><rect x="1" y="4.5" width="22" height="15" rx="4.5" fill="currentColor" mask="url(#wds-yt-m)"/></svg>
+      </a>
+    </div>
+
+    <p class="footer-copy">2026 © Warriors Dream Series – All Rights Reserved</p>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+<script src="../js/wds-config.js"></script>
+<script src="../js/wds-data.js"></script>
+<script>
+  // ---------------------------------------------------------------------------
+  // Fighter profile: every bout of one fighter from the WDS database
+  // (pages/fighter.html?id=<fighter id> or ?name=<fighter name>).
+  // The Rankings page links here and passes the fighter's rank, division and score.
+  // ---------------------------------------------------------------------------
+  (function () {
+    const params = new URLSearchParams(location.search);
+    const root = document.getElementById('fighterRoot');
+
+    const RESULT_LABEL = {
+      DECISION_UNANIMOUS: 'Decision - Unanimous', DECISION_SPLIT: 'Decision - Split', DECISION_MAJORITY: 'Decision - Majority',
+      DRAW: 'Draw', MAJORITY_DRAW: 'Draw - Majority', SPLIT_DRAW: 'Draw - Split', KO_HEAD: 'KO', KO_BODY: 'KO (Body)', TKO: 'TKO',
+      SUBMISSION: 'Submission', RNC: 'Submission', DOCTOR_STOPPAGE: 'TKO - Doctor Stoppage',
+      CORNER_STOPPAGE: 'TKO - Corner Stoppage', DQ: 'Disqualification', NO_CONTEST: 'No Contest'
+    };
+    const KO = ['KO_HEAD', 'KO_BODY', 'TKO', 'DOCTOR_STOPPAGE', 'CORNER_STOPPAGE'];
+    const SUB = ['SUBMISSION', 'RNC'];
+    const DEC = ['DECISION_UNANIMOUS', 'DECISION_SPLIT', 'DECISION_MAJORITY', 'DQ'];
+    // Same cut-out photos the Rankings page uses when the database has no photo.
+    const FIGHTER_PHOTOS = {
+      'jeko laishram': 'Jeko_Laishram.png', 'gaganpal singh dua': 'Gaganpal_Singh.png',
+      'surbala devi laishram': 'Surbala_Laishram.png', 'ashish rawat': 'Ashish_Rawat.png',
+      'ben holdsworth': 'Ben_Holdsworth.png', 'bishal sahu': 'Bishal_Sahu.png', 'edukondal rao': 'Edukondal_Rao.png',
+      'kimson tony': 'Kimson.png', 'rohit raina': 'Rohit_Raina.png', 'sagar ramdas dange': 'Sagar_Dange.png',
+      'sangramsingh godse': 'Sangramsingh_Godase.png', 'thiaumuanlal guite': 'Thiaumuanlal_Guite.png',
+      'ajay singh dhoni': 'Ajay_Singh_Dhoni.png'
+    };
+    const SILHOUETTE = '<svg viewBox="0 0 120 130" aria-hidden="true"><circle cx="60" cy="38" r="26" fill="currentColor"/><path d="M8 130c4-38 26-58 52-58s48 20 52 58z" fill="currentColor"/></svg>';
+    const MONTHS = ['Jan.', 'Feb.', 'Mar.', 'Apr.', 'May', 'Jun.', 'Jul.', 'Aug.', 'Sep.', 'Oct.', 'Nov.', 'Dec.'];
+
+    const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const norm = n => String(n || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const clock = s => s == null ? '—' : Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    const titleCase = s => String(s || '').toLowerCase().replace(/\b([a-z])/g, m => m.toUpperCase());
+    function fmtDate(iso) {
+      if (!iso) return 'Date TBA';
+      const [y, m, d] = iso.split('-').map(Number);
+      return `${MONTHS[m - 1]} ${d}, ${y}`;
+    }
+    function photoFor(name, url) {
+      if (url) return url;
+      const file = FIGHTER_PHOTOS[norm(name)];
+      return file ? '../assets/images/' + file : null;
+    }
+    function profileUrl(id, name) {
+      return 'fighter.html?' + (id ? 'id=' + encodeURIComponent(id) : 'name=' + encodeURIComponent(name));
+    }
+    let currentFilter = 'all';
+    function showState(html) { root.innerHTML = `<div class="fp-state">${html}</div>`; }
+
+    function loadFighter() {
+      const W = window.WDS;
+      if (!W || !W.enabled) return Promise.reject(new Error('offline'));
+      const id = params.get('id');
+      const name = params.get('name');
+      const query = id ? 'fighters?select=*&id=eq.' + encodeURIComponent(id)
+                       : 'fighters?select=*&name_key=eq.' + encodeURIComponent(norm(name));
+      if (!id && !name) return Promise.reject(new Error('missing'));
+      return W.rest(query).then(rows => {
+        if (!rows.length) throw new Error('not-found');
+        const f = rows[0];
+        return Promise.all([
+          f,
+          W.rest('public_bout_card?select=*&or=(red_fighter_id.eq.' + f.id + ',blue_fighter_id.eq.' + f.id + ')'),
+          W.events()
+        ]);
+      });
+    }
+
+    // One row per bout, from this fighter's point of view.
+    function toFights(f, bouts, events) {
+      const eventsById = {};
+      events.forEach(e => { eventsById[e.id] = e; });
+      return bouts.map(b => {
+        const isRed = b.red_fighter_id === f.id;
+        const e = eventsById[b.event_id] || {};
+        const final = b.result_status === 'final';
+        let outcome = 'up';
+        if (final) {
+          if (b.result_type === 'NO_CONTEST') outcome = 'NC';
+          else if (b.winner_id === f.id) outcome = 'W';
+          else if (b.winner_id) outcome = 'L';
+          else outcome = 'D';
+        } else if (/COMPLETED/i.test(b.status || '') || b.result_status === 'provisional' || b.result_status === 'pending') {
+          outcome = 'pending';
+        }
+        return {
+          id: b.id,
+          event: e.title || 'WDS event', slug: e.slug, date: e.event_date || b.bout_date || '',
+          pro: b.bout_type === 'PROFESSIONAL', discipline: b.discipline || 'MMA',
+          weightClass: b.weight_class || '', boutName: b.bout_name || '',
+          opponent: isRed ? b.blue_name : b.red_name,
+          opponentId: isRed ? b.blue_fighter_id : b.red_fighter_id,
+          opponentPhoto: isRed ? b.blue_photo_url : b.red_photo_url,
+          myPhoto: isRed ? b.red_photo_url : b.blue_photo_url,
+          outcome, resultType: b.result_type, round: b.end_round, sec: b.end_time_sec, final
+        };
+      }).sort((a, b) => (b.date || '').localeCompare(a.date || '') || 0);
+    }
+
+    function record(fights) {
+      const r = { W: 0, L: 0, D: 0, NC: 0, ko: 0, sub: 0, dec: 0, r1: 0 };
+      fights.forEach(x => {
+        if (!x.final) return;
+        if (x.outcome in r) r[x.outcome]++;
+        if (x.outcome === 'W') {
+          if (KO.includes(x.resultType)) r.ko++;
+          else if (SUB.includes(x.resultType)) r.sub++;
+          else r.dec++;
+          if (x.round === 1 && !DEC.includes(x.resultType)) r.r1++;
+        }
+      });
+      r.text = `${r.W}-${r.L}-${r.D}` + (r.NC ? ` (${r.NC} NC)` : '');
+      return r;
+    }
+
+    function headshot(name, url, plaque) {
+      const photo = photoFor(name, url);
+      const img = photo ? `<img src="${esc(photo)}" alt="${esc(name)}" loading="lazy" onerror="this.remove()">` : SILHOUETTE;
+      return `<div class="fp-head">${img}${plaque || ''}</div>`;
+    }
+
+    function fightCard(f, x) {
+      const plaqueMe = x.outcome === 'W' ? '<span class="fp-plaque">Win</span>'
+        : x.outcome === 'D' ? '<span class="fp-plaque draw">Draw</span>'
+        : x.outcome === 'NC' ? '<span class="fp-plaque nc">NC</span>' : '';
+      const plaqueOpp = x.outcome === 'L' ? '<span class="fp-plaque">Win</span>' : '';
+      const result = { W: 'Win', L: 'Loss', D: 'Draw', NC: 'No contest', up: 'Upcoming', pending: 'Result pending' }[x.outcome];
+      const method = x.final ? (RESULT_LABEL[x.resultType] || titleCase(String(x.resultType || '').replace(/_/g, ' ')) || '—') : '—';
+      const decision = /^DECISION|DRAW|NO_CONTEST/.test(x.resultType || '');
+      const fightCardLink = x.slug ? `<a href="event.html?e=${encodeURIComponent(x.slug)}">Fight card ›</a>` : '';
+      const oppLink = x.opponentId ? `<a href="${profileUrl(x.opponentId, x.opponent)}">${esc(x.opponent || 'TBA')}</a>` : esc(x.opponent || 'TBA');
+      return `<article class="fp-fight" data-type="${x.pro ? 'pro' : 'am'}">
+          <div class="fp-matchup">${headshot(f.name, x.myPhoto || f.photo_url, plaqueMe)}${headshot(x.opponent, x.opponentPhoto, plaqueOpp)}</div>
+          <div>
+            <h3 class="fp-fight-title"><span>${esc(f.name)}</span><span class="vs">vs</span>${oppLink}</h3>
+            <p class="fp-fight-date">${esc(fmtDate(x.date))} · ${esc(x.event)}</p>
+            <div class="fp-fight-tags">
+              <span class="fp-chip result-${x.outcome === 'pending' ? 'up' : x.outcome}">${result}</span>
+              <span class="fp-chip${x.pro ? ' pro' : ''}">${x.pro ? 'Professional' : 'Amateur'}${x.discipline !== 'MMA' ? ' ' + esc(x.discipline) : ''}</span>
+              ${x.weightClass ? `<span class="fp-chip">${esc(x.weightClass)}</span>` : ''}
+              ${/main event/i.test(x.boutName) ? `<span class="fp-chip">${esc(x.boutName)}</span>` : ''}
+            </div>
+            <div class="fp-results">
+              <div><div class="fp-result-label">Round</div><div class="fp-result-text">${x.final && x.round ? x.round : '—'}</div></div>
+              <div><div class="fp-result-label">Time</div><div class="fp-result-text">${x.final && x.sec != null && !(decision && !x.sec) ? clock(x.sec) : '—'}</div></div>
+              <div><div class="fp-result-label">Method</div><div class="fp-result-text">${esc(method)}</div></div>
+            </div>
+          </div>
+          <div class="fp-fight-links">${fightCardLink}</div>
+        </article>`;
+    }
+
+    function bar(label, n, total) {
+      const pct = total ? Math.round(100 * n / total) : 0;
+      return `<div class="fp-bar"><div class="fp-bar-head"><span>${label}</span><span>${n} (${pct}%)</span></div>
+        <div class="fp-bar-track"><div class="fp-bar-fill" style="width:${pct}%"></div></div></div>`;
+    }
+
+    function render(f, fights) {
+      const pro = fights.filter(x => x.pro);
+      const am = fights.filter(x => !x.pro);
+      const proRec = record(pro);
+      const amRec = record(am);
+      const main = pro.some(x => x.final) ? proRec : amRec;           // hero stats: pro record when the fighter has one
+      const mainLabel = main === proRec ? 'Pro' : 'Amateur';
+      const done = fights.filter(x => x.final);
+      const last = done[0];
+      const next = fights.filter(x => x.outcome === 'up').sort((a, b) => (a.date || '').localeCompare(b.date || ''))[0];
+      const rank = params.get('rank');
+      const div = params.get('div') || f.weight_class || '';
+      const score = params.get('score');
+      const photo = photoFor(f.name, f.photo_url);
+      document.title = `${f.name} — Warriors Dream Series`;
+
+      const tags = [];
+      if (rank) tags.push(rank === 'C' ? `Champion · ${esc(div)}` : `#${esc(rank)} ${esc(div)}`);
+      if (pro.length) tags.push('Professional');
+      else if (am.length) tags.push('Amateur');
+      if (f.public_id) tags.push(esc(f.public_id));
+
+      const lastBox = last ? `<div class="fp-box">
+          <p class="fp-box-label">Last fight · ${({ W: 'Win', L: 'Loss', D: 'Draw', NC: 'No contest' })[last.outcome]}</p>
+          <p class="fp-box-title">${esc(f.name.split(' ').slice(-1)[0])}<span class="vs">vs</span>${esc((last.opponent || 'TBA').split(' ').slice(-1)[0])}</p>
+          <p class="fp-box-meta">${esc(fmtDate(last.date))} · ${esc(last.event)}</p>
+        </div>` : '';
+      const nextBox = next ? `<div class="fp-box">
+          <p class="fp-box-label">Upcoming fight</p>
+          <p class="fp-box-title">${esc(f.name.split(' ').slice(-1)[0])}<span class="vs">vs</span>${esc((next.opponent || 'TBA').split(' ').slice(-1)[0])}</p>
+          <p class="fp-box-meta">${esc(fmtDate(next.date))} · ${esc(next.event)}</p>
+        </div>` : '';
+      const scoreBox = score ? `<div class="fp-box"><p class="fp-box-label">WDS ranking score</p>
+          <p class="fp-box-score"><strong>${esc(Number(score).toFixed(2))}</strong>${rank ? (rank === 'C' ? 'Champion' : 'Ranked #' + esc(rank)) + ' · ' + esc(div) : ''}</p></div>` : '';
+
+      const total = main.ko + main.sub + main.dec;
+      const filterBtns = (pro.length && am.length) ? `<div class="fp-filter" role="group" aria-label="Filter fights">
+          <button type="button" data-filter="all">All (${fights.length})</button>
+          <button type="button" data-filter="pro">Professional (${pro.length})</button>
+          <button type="button" data-filter="am">Amateur (${am.length})</button></div>` : '';
+      const social = f.social_url ? `<a href="${esc(f.social_url)}" target="_blank" rel="noopener">Profile ›</a>` : '';
+      const info = [
+        ['Status', 'Active'],
+        ['Hometown', f.hometown ? titleCase(f.hometown) : ''],
+        ['Trains at', f.team ? titleCase(f.team) : ''],
+        ['Division', div],
+        ['Pro record', pro.length ? proRec.text : ''],
+        ['Amateur record', am.length ? amRec.text : ''],
+        ['WDS debut', fights.length ? fmtDate(fights.filter(x => x.date).slice(-1)[0]?.date) : ''],
+        ['Height', f.height || ''],
+        ['Weight', f.weight || ''],
+        ['Country', f.country || ''],
+        ['Links', social]
+      ].filter(r => r[1]);
+
+      root.innerHTML = `
+        <section class="fp-hero">
+          <div class="fp-wrap">
+            <div class="fp-hero-left">
+              <a class="fp-back" href="rankings.html">‹ Rankings</a>
+              <div class="fp-tags">${tags.map(t => `<span class="fp-tag">${t}</span>`).join('')}</div>
+              ${f.nickname ? `<p class="fp-nick">"${esc(f.nickname)}"</p>` : ''}
+              <h1 class="fp-name">${esc(f.name)}</h1>
+              ${div ? `<p class="fp-division">${esc(div)} Division</p>` : ''}
+              <p class="fp-record">${main.text} (W-L-D) · ${mainLabel}</p>
+              <div class="fp-stats">
+                <div class="fp-stat"><div class="fp-stat-num">${main.ko}</div><div class="fp-stat-label">Wins by<br>knockout</div></div>
+                <div class="fp-stat"><div class="fp-stat-num">${main.sub}</div><div class="fp-stat-label">Wins by<br>submission</div></div>
+              </div>
+            </div>
+            <div class="fp-photo${photo ? '' : ' no-photo'}">${photo ? `<img src="${esc(photo)}" alt="${esc(f.name)}" onerror="this.remove()">` : SILHOUETTE}</div>
+            <div class="fp-hero-right">${lastBox}${nextBox}${scoreBox}<a class="fp-history-btn" href="#fight-history">View fight history</a></div>
+          </div>
+        </section>
+
+        <div class="fp-wrap">
+          <section class="fp-section">
+            <h2 class="fp-h2">Stats &amp; Records</h2>
+            <div class="fp-stats-grid">
+              <div class="fp-card">
+                <h3 class="fp-card-title">Win by method · ${mainLabel}</h3>
+                ${bar('KO/TKO', main.ko, total)}${bar('Dec', main.dec, total)}${bar('Sub', main.sub, total)}
+              </div>
+              <div class="fp-card">
+                <h3 class="fp-card-title">Record</h3>
+                <div class="fp-split">
+                  <div><p class="fp-big">${pro.length ? proRec.text : '—'}</p><p class="fp-big-label">Professional</p></div>
+                  <div><p class="fp-big">${am.length ? amRec.text : '—'}</p><p class="fp-big-label">Amateur</p></div>
+                </div>
+              </div>
+              <div class="fp-card">
+                <h3 class="fp-card-title">Finishes · ${mainLabel}</h3>
+                <div class="fp-split">
+                  <div><p class="fp-big">${main.ko + main.sub}</p><p class="fp-big-label">Total finishes</p></div>
+                  <div><p class="fp-big">${main.r1}</p><p class="fp-big-label">1st-round finishes</p></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="fp-section" id="fight-history">
+            <h2 class="fp-h2">Athlete Record</h2>
+            ${filterBtns}
+            <div id="fpFights">${fights.length ? fights.map(x => fightCard(f, x)).join('') : '<p>No WDS fights recorded yet.</p>'}</div>
+          </section>
+
+          <section class="fp-section">
+            <h2 class="fp-h2">Info</h2>
+            <dl class="fp-info">${info.map(([k, v]) => `<div><dt>${k}</dt><dd>${k === 'Links' ? v : esc(v)}</dd></div>`).join('')}</dl>
+          </section>
+        </div>`;
+
+      const applyFilter = want => {
+        currentFilter = want;
+        root.querySelectorAll('.fp-filter button').forEach(b => b.classList.toggle('active', b.dataset.filter === want));
+        root.querySelectorAll('.fp-fight').forEach(el => { el.hidden = want !== 'all' && el.dataset.type !== want; });
+      };
+      root.querySelectorAll('.fp-filter button').forEach(btn => btn.addEventListener('click', () => applyFilter(btn.dataset.filter)));
+      applyFilter(root.querySelector('.fp-filter') ? currentFilter : 'all');
+    }
+
+    function run() {
+      return loadFighter().then(([f, bouts, events]) => render(f, toFights(f, bouts, events)));
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      run()
+        .then(() => window.WDS.subscribe && window.WDS.subscribe(['bouts', 'fighters', 'bout_points'], () => run().catch(() => {})))
+        .catch(e => {
+          const msg = e && e.message;
+          if (msg === 'missing' || msg === 'not-found') {
+            showState('We couldn’t find that fighter. <a href="rankings.html">Back to Rankings</a>');
+          } else {
+            showState('Fighter records load from the WDS database and it can’t be reached right now. Please try again shortly. <a href="rankings.html">Back to Rankings</a>');
+          }
+        });
+    });
+  })();
+</script>
+</body>
+</html>
