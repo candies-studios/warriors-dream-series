@@ -19,9 +19,33 @@
       --rk-soft: #f6f6f6;
       background: #ffffff;
       color: var(--rk-text);
-      padding: 60px 0 40px;
+      padding: 0 0 40px;
       font-family: 'Roboto Condensed', 'Arial Narrow', Arial, sans-serif;
     }
+    /* Hero Section (unchanged) */
+    .rk-hero {
+      position: relative;
+      height: 500px;
+      background: linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url('../assets/images/rankings-hero.jpg');
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 50px;
+    }
+
+    .rk-hero h1 {
+      font-size: 120px;
+      color: white;
+      font-weight: 700;
+      letter-spacing: 2px;
+      line-height: 1;
+      margin: 0;
+      text-transform: uppercase;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+
     .rk-wrap {
       max-width: 1024px;
       margin: 0 auto;
@@ -240,14 +264,12 @@
       color: var(--rk-muted);
     }
 
-    @media (max-width: 1024px) {
-      .rankings-main { padding-top: 50px; }
-    }
     @media (max-width: 900px) {
       .rk-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; }
     }
     @media (max-width: 560px) {
-      .rankings-main { padding-top: 36px; }
+      .rk-hero { height: 320px; overflow: hidden; }
+      .rk-hero h1 { font-size: clamp(48px, 16vw, 72px); }
       .rk-wrap { padding: 0 16px; }
       .rk-title { font-size: 40px; }
       .rk-grid { grid-template-columns: minmax(0, 1fr); row-gap: 44px; }
@@ -302,9 +324,13 @@
 </div>
 
 <main class="rankings-main">
+  <!-- Hero Section -->
+  <section class="rk-hero">
+    <h1>Rankings</h1>
+  </section>
+
   <div class="rk-wrap">
     <header class="rk-header">
-      <h1 class="rk-title">WDS Rankings</h1>
       <p class="rk-subtitle">Professional MMA · Official, finalized results</p>
     </header>
 
