@@ -273,6 +273,17 @@
       color: #666;
     }
 
+    /* Men / Women division groups */
+    .division-selector { flex-direction: column; align-items: center; gap: 22px; }
+    .division-group { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+    .division-group-label {
+      font-size: 13px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #d63031;
+    }
+    .division-group-buttons { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+    .rk-empty {
+      background: #f8f8f8; border-radius: 12px; padding: 40px 20px; text-align: center;
+      color: #888; font-size: 15px; margin-bottom: 80px;
+    }
     @media (max-width: 768px) {
       .rk-hero { height: 320px; }
       .rk-hero h1 { font-size: clamp(48px, 16vw, 72px); }
@@ -338,7 +349,7 @@
   <!-- Main Content -->
   <div class="container">
     <div class="info-section">
-      <strong>📊 WDS Ranking Score:</strong> Score = (Win% × 0.7 + Win Method Weight × 0.3) × √(total fights). Every win adds a weight for how it was won — earlier finishes count more (KO/TKO R1 0.75 · R2 0.70 · R3 0.65, Submission R1 0.70 · R2 0.65 · R3 0.60, Decision 0.55). Only official, finalized results count.
+      <strong>📊 WDS Ranking Score:</strong> Score = (Win% × 0.7 + Win Method Weight × 0.3) × √(total fights). Every win adds a weight for how it was won — earlier finishes count more (KO/TKO R1 0.75 · R2 0.70 · R3 0.65, Submission R1 0.70 · R2 0.65 · R3 0.60, Decision 0.55). Only official, finalized <strong>professional</strong> MMA bouts count — amateur bouts are not ranked. Women are ranked separately.
     </div>
 
     <!-- Division Selector -->
@@ -392,147 +403,223 @@
 <script src="../js/wds-config.js"></script>
 <script src="../js/wds-data.js"></script>
   <script>
-    const fights = [
-      { fighter1: 'Jeko Laishram', fighter2: 'Opponent1', winner: 'Jeko Laishram', division: 'flyweight' },
-      { fighter1: 'Gaganpal Singh Dua', fighter2: 'Opponent2', winner: 'Gaganpal Singh Dua', division: 'bantamweight' },
-      { fighter1: 'Bishal Sahu', fighter2: 'Opponent3', winner: 'Bishal Sahu', division: 'flyweight' },
-      { fighter1: 'Shoaib Khan', fighter2: 'Opponent4', winner: 'Shoaib Khan', division: 'lightweight' },
-      { fighter1: 'Mansur Yakhyaev', fighter2: 'Opponent5', winner: 'Mansur Yakhyaev', division: 'welterweight' },
-      { fighter1: 'Sharip Omarov', fighter2: 'Opponent6', winner: 'Sharip Omarov', division: 'bantamweight' },
-      { fighter1: 'Shreenath Barale', fighter2: 'OpponentRS7-1', winner: 'Shreenath Barale', division: 'lightweight' },
-      { fighter1: 'Shrishti Dethe', fighter2: 'OpponentRS7-2', winner: 'Shrishti Dethe', division: 'featherweight' },
-      { fighter1: 'Bhuvan R', fighter2: 'OpponentRS7-3', winner: 'Bhuvan R', division: 'flyweight' },
-      { fighter1: 'Ashish Maurya', fighter2: 'OpponentRS7-4', winner: 'Ashish Maurya', division: 'welterweight' },
-      { fighter1: 'Ben Holdsworth', fighter2: 'Kimson Tony', winner: 'Ben Holdsworth', division: 'welterweight' },
-      { fighter1: 'Ashok Bagde', fighter2: 'Rohit Raina', winner: 'Ashok Bagde', division: 'bantamweight' },
-      { fighter1: 'Muhiddinov Oyatullo', fighter2: 'Kesavan M', winner: 'Muhiddinov Oyatullo', division: 'featherweight' },
-      { fighter1: 'A Shabarish', fighter2: 'Thiaumuanlal Guite', winner: 'A Shabarish', division: 'flyweight' },
-      { fighter1: 'Raj Singh Baghel', fighter2: 'Rajkumar R', winner: 'Raj Singh Baghel', division: 'featherweight' },
-      { fighter1: 'Sangramsingh Godse', fighter2: 'Sagar Dange', winner: 'Sangramsingh Godse', division: 'flyweight' },
-      { fighter1: 'Varun Sanyal', fighter2: 'Karan Chauhan', winner: 'Varun Sanyal', division: 'lightweight' },
-      { fighter1: 'Nikhil Thapa', fighter2: 'Chhimey Nurbu Bodh', winner: 'Nikhil Thapa', division: 'flyweight' },
-      { fighter1: 'Suryansh Pathak', fighter2: 'Nikhil Prajapati', winner: 'Suryansh Pathak', division: 'flyweight' },
-      { fighter1: 'Syed Imad Uddin', fighter2: 'Gurjeet Chahal', winner: 'Syed Imad Uddin', division: 'lightheavyweight' },
-      { fighter1: 'Andrey Chelbaev', fighter2: 'Ashok Bagade', winner: 'Ashok Bagade', division: 'bantamweight' },
-      { fighter1: 'Rishabh Patel', fighter2: 'Gurtej Singh', winner: 'Gurtej Singh', division: 'lightweight' },
-      { fighter1: 'Amit Amauriya', fighter2: 'Harsh Pandya', winner: 'Harsh Pandya', division: 'flyweight' },
-      { fighter1: 'Karandeep Singh', fighter2: 'Karan Jadhav', winner: 'Karan Jadhav', division: 'bantamweight' },
-      { fighter1: 'Rehan Rizvi', fighter2: 'Anubhav Kashyap', winner: 'Anubhav Kashyap', division: 'flyweight' },
-      { fighter1: 'Amit Cheeda', fighter2: 'M V Sarath Raj', winner: 'Amit Cheeda', division: 'welterweight' },
-      { fighter1: 'Mohit Dagar', fighter2: 'Qaazim Sheikh', winner: 'Mohit Dagar', division: 'bantamweight' },
-      { fighter1: 'Mahesh', fighter2: 'Vijay Yadav', winner: 'Mahesh', division: 'flyweight' },
-      { fighter1: 'Santosh Yadav', fighter2: 'Mano Satya Sai', winner: 'Santosh Yadav', division: 'flyweight' },
-      { fighter1: 'Pruthvi Gulla', fighter2: 'Bhim Singh', winner: 'Pruthvi Gulla', division: 'featherweight' },
-      { fighter1: 'Vikas Sehrawat', fighter2: 'Aman Shaikh', winner: 'Vikas Sehrawat', division: 'featherweight' },
-      { fighter1: 'Marshal Khimta', fighter2: 'Anosh', winner: 'Marshal Khimta', division: 'flyweight' },
-      { fighter1: 'Manav G V S', fighter2: 'Vishal Magar', winner: 'Manav G V S', division: 'bantamweight' },
-      { fighter1: 'Duke', fighter2: 'Nitish Kumar', winner: 'Duke', division: 'bantamweight' }
-    ];
+    // ---------------------------------------------------------------------------
+    // WDS Rankings — PROFESSIONAL fighters only.
+    //   • Every finalized bout marked PROFESSIONAL in the database counts (MMA only);
+    //     amateur and K1 bouts are left out.
+    //   • Men: Flyweight → Heavyweight (8 divisions). Women are ranked separately:
+    //     Strawweight, Flyweight, Bantamweight. Catchweight, men's strawweight and
+    //     any other division are left out.
+    //   • Score = (Win% × 0.7 + Win Method Weight × 0.3) × √(total fights), the
+    //     committee formula, using the win-method weights stored in the database.
+    // ---------------------------------------------------------------------------
 
-    // Division names / weights shown on the page (new divisions from the database are added automatically).
-    const DIVISION_META = {
-      'flyweight': { name: 'Flyweight', subtitle: '56.7 kg' },
-      'bantamweight': { name: 'Bantamweight', subtitle: '61.2 kg' },
-      'featherweight': { name: 'Featherweight', subtitle: '65.8 kg' },
-      'lightweight': { name: 'Lightweight', subtitle: '70.3 kg' },
-      'welterweight': { name: 'Welterweight', subtitle: '77.1 kg' },
-      'lightheavyweight': { name: 'Light Heavyweight', subtitle: '93 kg' }
+    const MEN_DIVISIONS = [
+      { key: 'flyweight',        name: 'Flyweight',         subtitle: '56.7 kg' },
+      { key: 'bantamweight',     name: 'Bantamweight',      subtitle: '61.2 kg' },
+      { key: 'featherweight',    name: 'Featherweight',     subtitle: '65.8 kg' },
+      { key: 'lightweight',      name: 'Lightweight',       subtitle: '70.3 kg' },
+      { key: 'welterweight',     name: 'Welterweight',      subtitle: '77.1 kg' },
+      { key: 'middleweight',     name: 'Middleweight',      subtitle: '83.9 kg' },
+      { key: 'lightheavyweight', name: 'Light Heavyweight', subtitle: '93 kg' },
+      { key: 'heavyweight',      name: 'Heavyweight',       subtitle: '120.2 kg' }
+    ];
+    const WOMEN_DIVISIONS = [
+      { key: 'w-strawweight',  name: "Women's Strawweight",  subtitle: '52.2 kg' },
+      { key: 'w-flyweight',    name: "Women's Flyweight",    subtitle: '56.7 kg' },
+      { key: 'w-bantamweight', name: "Women's Bantamweight", subtitle: '61.2 kg' }
+    ];
+    // The database does not store a fighter's gender yet: women professionals are
+    // listed here (lower case). Add new names when a women's pro bout is booked.
+    const WOMEN_FIGHTERS = new Set([
+      'surbala devi laishram', 'radha gupta', 'veronika partikova', 'lakhi das'
+    ]);
+    // Bouts saved without a weight class: division confirmed from the official record (Sherdog).
+    const DIVISION_FIXES = { 'mahboob khan|sangram singh': 'flyweight' };
+
+    const DEFAULT_WEIGHTS = {
+      KO_HEAD: [0.75, 0.70, 0.65], KO_BODY: [0.75, 0.70, 0.65], TKO: [0.75, 0.70, 0.65],
+      DOCTOR_STOPPAGE: [0.75, 0.70, 0.65], CORNER_STOPPAGE: [0.75, 0.70, 0.65],
+      SUBMISSION: [0.70, 0.65, 0.60], RNC: [0.70, 0.65, 0.60],
+      DECISION_UNANIMOUS: 0.55, DECISION_SPLIT: 0.55, DECISION_MAJORITY: 0.55, DQ: 0.55
+    };
+    const RESULT_LABEL = {
+      DECISION_UNANIMOUS: 'Unanimous decision', DECISION_SPLIT: 'Split decision', DECISION_MAJORITY: 'Majority decision',
+      DRAW: 'Draw', MAJORITY_DRAW: 'Majority draw', KO_HEAD: 'KO', KO_BODY: 'KO (body)', TKO: 'TKO',
+      SUBMISSION: 'Submission', RNC: 'Submission', DOCTOR_STOPPAGE: 'Doctor stoppage',
+      CORNER_STOPPAGE: 'Corner stoppage', DQ: 'Disqualification', NO_CONTEST: 'No contest'
     };
 
-    function emptyDivisions() {
-      const d = { 'all': { name: 'All Divisions', subtitle: 'Combined Fighters', champion: null, fighters: [] } };
-      Object.keys(DIVISION_META).forEach(key => {
-        d[key] = { name: DIVISION_META[key].name, subtitle: DIVISION_META[key].subtitle, champion: null, fighters: [] };
-      });
-      return d;
+    // Saved list of finalized professional bouts (shown if the database cannot be reached).
+    // [event, date, bout #, weight class, red, blue, winner R/B/'', result type, round, end second, event slug]
+    const SAVED_PRO_BOUTS = [
+      ["WDS Fight Night 1", "2022-04-09", 1, "Flyweight", "Arun Bist", "Arbaj Shaikh", "B", "KO_HEAD", 1, 243, "wds-fight-night-1"],
+      ["WDS Fight Night 1", "2022-04-09", 2, "Bantamweight", "Gopal Badaila", "Raj Madhesiya", "B", "SUBMISSION", 1, 86, "wds-fight-night-1"],
+      ["WDS Fight Night 1", "2022-04-09", 3, "Flyweight", "Santosh Bag", "Deepak Bhardwaj", "B", "DECISION_SPLIT", 3, 300, "wds-fight-night-1"],
+      ["WDS Fight Night 1", "2022-04-09", 4, "Bantamweight", "Vikash Choudhary", "Manjeet Dayal", "B", "TKO", 2, 137, "wds-fight-night-1"],
+      ["WDS Fight Night 1", "2022-04-09", 5, "Middleweight", "Omkar Pawar", "Shankar Bhiswas", "B", "KO_HEAD", 1, 21, "wds-fight-night-1"],
+      ["WDS Fight Night 1", "2022-04-09", 6, "Welterweight", "Vaibhav Mistry", "Farhan Siddique", "B", "RNC", 1, 165, "wds-fight-night-1"],
+      ["WDS Fight Night 2", "2022-07-23", 1, "Lightweight", "Mazhar Khan", "Sujit Gund", "B", "TKO", 2, 214, "wds-fight-night-2"],
+      ["WDS Fight Night 2", "2022-07-23", 2, "Bantamweight", "Anubhav Kashyap", "Raj Madhesiya", "B", "SUBMISSION", 3, 86, "wds-fight-night-2"],
+      ["WDS Fight Night 2", "2022-07-23", 3, "Flyweight", "Mohammed Dawood Khan", "Arun Bist", "B", "SUBMISSION", 1, 224, "wds-fight-night-2"],
+      ["WDS Fight Night 2", "2022-07-23", 4, "Flyweight", "Arjun Kumar", "Sumit Kumar", "B", "SUBMISSION", 1, 95, "wds-fight-night-2"],
+      ["WDS Fight Night 2", "2022-07-23", 5, "Featherweight", "Rahul Sonkamble", "Paalee Sathishwer", "B", "TKO", 1, 180, "wds-fight-night-2"],
+      ["WDS Fight Night 2", "2022-07-23", 6, "Featherweight", "Ravi Saw", "Edukondal Rao", "B", "SUBMISSION", 2, 99, "wds-fight-night-2"],
+      ["WDS Fight Night 4", "2023-03-25", 6, "Heavyweight", "Gaganpal Singh Dua", "Ranveer", "R", "TKO", 1, 30, "wds-fight-night-4"],
+      ["WDS Fight Night 4", "2023-03-25", 7, "Middleweight", "Omkar Pawar", "Jayesh Pandey", "R", "KO_HEAD", 1, 18, "wds-fight-night-4"],
+      ["WDS Fight Night 4", "2023-03-25", 8, "Flyweight", "Mahesh Lad", "Sagar Kashyap", "B", "TKO", 1, 96, "wds-fight-night-4"],
+      ["WDS Fight Night 4", "2023-03-25", 9, "Strawweight", "Santosh Bag", "Bambam Thounaujam", "R", "SUBMISSION", 1, 132, "wds-fight-night-4"],
+      ["WDS Fight Night 4", "2023-03-25", 10, "Welterweight", "Prathamesh Deshpande", "Sujit Gund", "R", "TKO", 1, 87, "wds-fight-night-4"],
+      ["WDS Fight Night 4", "2023-03-25", 11, "Flyweight", "Fahad Khan", "Ajay Payal", "R", "TKO", 3, 269, "wds-fight-night-4"],
+      ["WDS Fight Night 4", "2023-03-25", 12, "Catchweight", "Karan Chauhan", "Raj Madhesiya", "B", "TKO", 1, 175, "wds-fight-night-4"],
+      ["WDS Fight Night 4", "2023-03-25", 13, "Flyweight", "Manthan Rane", "Arun Bist", "R", "DECISION_UNANIMOUS", 3, 300, "wds-fight-night-4"],
+      ["WDS Fight Night 5", "2023-07-30", 1, "Featherweight", "Rishabh Patel", "Tribhuvan Issar", "", "MAJORITY_DRAW", 3, 300, "wds-fight-night-5"],
+      ["WDS Fight Night 5", "2023-07-30", 2, "Flyweight", "Vikas Jaiswar", "Raju K M", "B", "SUBMISSION", 1, 35, "wds-fight-night-5"],
+      ["WDS Fight Night 5", "2023-07-30", 3, "Flyweight", "Jeko Laishram", "Prashant Patel", "R", "SUBMISSION", 2, 286, "wds-fight-night-5"],
+      ["WDS Fight Night 5", "2023-07-30", 4, "Lightweight", "Shiv Kumar", "Nishant Karkera", "", "NO_CONTEST", null, null, "wds-fight-night-5"],
+      ["WDS Fight Night 5", "2023-07-30", 5, "Featherweight", "Rehan Lulla", "Niranjan Singh", "R", "DECISION_SPLIT", 3, 300, "wds-fight-night-5"],
+      ["WDS Fight Night 5", "2023-07-30", 6, "Strawweight", "Sagar Kashyap", "Vikas Gupta", "R", "DECISION_UNANIMOUS", 3, 300, "wds-fight-night-5"],
+      ["WDS Fight Night 5", "2023-07-30", 7, "Heavyweight", "Gaganpal Singh Dua", "Zaid Sayyed Shaikh", "R", "TKO", 1, 94, "wds-fight-night-5"],
+      ["WDS Fight Night 6", "2023-10-28", 1, "Bantamweight", "Mohan Gorle", "Siddharth Kothapalli", "B", "RNC", 1, 80, "wds-fight-night-6"],
+      ["WDS Fight Night 6", "2023-10-28", 2, "Featherweight", "Savar Basarimarad", "Ketan Gharat", "R", "TKO", 1, 160, "wds-fight-night-6"],
+      ["WDS Fight Night 6", "2023-10-28", 3, "Welterweight", "Prathamesh Deshpande", "Kimson Tony", "R", "DECISION_UNANIMOUS", 3, 300, "wds-fight-night-6"],
+      ["WDS Fight Night 6", "2023-10-28", 4, "Flyweight", "Gautam Moyong", "Jeko Laishram", "B", "RNC", 3, 198, "wds-fight-night-6"],
+      ["WDS Fight Night 6", "2023-10-28", 5, "Featherweight", "Tribhuvan Issar", "Thirubalachandran D", "B", "KO_HEAD", 1, 16, "wds-fight-night-6"],
+      ["WDS Fight Night 6", "2023-10-28", 6, "Featherweight", "Nishant Karkera", "Karan Chauhan", "R", "TKO", 1, 170, "wds-fight-night-6"],
+      ["WDS Fight Night 6", "2023-10-28", 7, "Strawweight", "Kerobin Tudu", "Prathamesh Kenjale", "B", "RNC", 2, 41, "wds-fight-night-6"],
+      ["WDS Fight Night 6", "2023-10-28", 8, "Flyweight", "Mukul Anand", "Sunny Khatri", "B", "RNC", 3, 99, "wds-fight-night-6"],
+      ["WDS Fight Night 6", "2023-10-28", 9, "Featherweight", "Nishant Karkera", "Thirubalachandran D", "R", "TKO", 1, 120, "wds-fight-night-6"],
+      ["WDS Fight Night 7", "2024-02-11", 1, "Featherweight", "Gaurav Kumar Rai", "Karan Chauhan", "B", "RNC", 1, 27, "wds-fight-night-7"],
+      ["WDS Fight Night 7", "2024-02-11", 2, "Bantamweight", "Siddharth Kothapalli", "Ganeshraj Srinivasan", "B", "DECISION_UNANIMOUS", 3, 300, "wds-fight-night-7"],
+      ["WDS Fight Night 7", "2024-02-11", 3, "Catchweight", "Prathamesh Deshpande", "Wasim Arsalan Malik", "R", "DECISION_UNANIMOUS", 3, 300, "wds-fight-night-7"],
+      ["WDS Fight Night 7", "2024-02-11", 4, "Strawweight", "Surbala Devi Laishram", "Radha Gupta", "R", "TKO", 1, 17, "wds-fight-night-7"],
+      ["WDS Fight Night 7", "2024-02-11", 5, "Bantamweight", "Chandiran Thirubala", "Naina Mohammed", "B", "DECISION_UNANIMOUS", 3, 300, "wds-fight-night-7"],
+      ["WDS Fight Night 8", "2024-05-25", 9, "Welterweight", "Virendra Baghel", "Purushothaman M K", "B", "SUBMISSION", 1, 245, "wds-fight-night-8"],
+      ["WDS Fight Night 8", "2024-05-25", 11, "Flyweight", "Veronika Partikova", "Lakhi Das", "B", "DECISION_UNANIMOUS", 3, 300, "wds-fight-night-8"],
+      ["WDS Fight Night 8", "2024-05-25", 12, "Flyweight", "Thengal Ranjan", "Arun Bist", "R", "DECISION_UNANIMOUS", 3, 300, "wds-fight-night-8"],
+      ["WDS Fight Night 9", "2024-09-01", 6, "Bantamweight", "Tulashidas Ningombam", "Thoidingjam Goroba Singh", "R", "SUBMISSION", 1, 169, "wds-fight-night-9"],
+      ["WDS Fight Night 9", "2024-09-01", 7, "Bantamweight", "Siddharth Kothapalli", "Karandeep Singh", "R", "SUBMISSION", 1, 282, "wds-fight-night-9"],
+      ["WDS Fight Night 9", "2024-09-01", 8, "Featherweight", "Lionel Mascarenhas", "Rishabh Patel", "R", "TKO", 2, 142, "wds-fight-night-9"],
+      ["WDS Fight Night 9", "2024-09-01", 9, "Bantamweight", "Shoaib Khan", "Satgunhao Kipgen", "R", "DECISION_UNANIMOUS", 3, 300, "wds-fight-night-9"],
+      ["WDS Fight Night 9", "2024-09-01", 10, "Flyweight", "Aaquib Javid", "Maruf Alam Shaikh", "R", "RNC", 1, 134, "wds-fight-night-9"],
+      ["WDS Fight Night 9", "2024-09-01", 11, "Lightweight", "Krishna Payasi", "Rudy Tshisuaka", "R", "DECISION_SPLIT", 3, 300, "wds-fight-night-9"],
+      ["WDS Fight Night 10", "2025-01-19", 8, "Flyweight", "Nazareth Lalthazuala", "Wahedullah Sediqi", "R", "TKO", 1, 113, "wds-fight-night-10"],
+      ["WDS Fight Night 10", "2025-01-19", 9, "Lightweight", "Mohsin Shaikh", "Shubham Pandey", "R", "DECISION_UNANIMOUS", 3, 300, "wds-fight-night-10"],
+      ["WDS Fight Night 10", "2025-01-19", 10, "Bantamweight", "Prathamesh Kenjale", "Tulashidas Ningombam", "R", "RNC", 2, 216, "wds-fight-night-10"],
+      ["WDS Fight Night 10", "2025-01-19", 11, "", "Mahboob Khan", "Sangram Singh", "R", "KO_HEAD", 1, 68, "wds-fight-night-10"],
+      ["WDS Fight Night 12", "2025-05-04", 12, "Bantamweight", "Karandeep Singh", "Tulashidas Ningombam", "R", "DECISION_UNANIMOUS", 3, 300, "wds-fight-night-12"],
+      ["WDS Fight Night 12", "2025-05-04", 13, "Welterweight", "Rayyan Butt", "Purushothaman M K", "R", "DECISION_UNANIMOUS", 3, 300, "wds-fight-night-12"],
+      ["WDS Fight Night 12", "2025-05-04", 14, "Catchweight", "Niranjan Phanjoubam", "Rajkumar R", "R", "DECISION_UNANIMOUS", 3, 300, "wds-fight-night-12"],
+      ["WDS Fight Night 13", "2025-07-27", 16, "Catchweight", "Gurtej Singh", "Rayyan Butt", "", "NO_CONTEST", null, null, "wds-fight-night-13"],
+      ["WDS Fight Night 13", "2025-07-27", 17, "Flyweight", "Shivaraj Basappa", "Vikas Jaiswar", "R", "RNC", 1, 108, "wds-fight-night-13"],
+      ["WDS Fight Night 13", "2025-07-27", 18, "Bantamweight", "Karandeep Singh", "Ashok Bagde", "B", "SUBMISSION", 1, 54, "wds-fight-night-13"],
+      ["WDS Fight Night 14", "2025-11-09", 15, "Flyweight", "Anubhav Kashyap", "Sandeep Baghel", "R", "DECISION_UNANIMOUS", 3, 300, "wds-fight-night-14"],
+      ["WDS Fight Night 14", "2025-11-09", 16, "Catchweight", "Gurkirat Singh Gill", "Akash Rathod", "R", "DECISION_UNANIMOUS", 3, 300, "wds-fight-night-14"],
+      ["WDS Fight Night 14", "2025-11-09", 17, "Bantamweight", "Tulashidas Ningombam", "Suraj Patkar", "R", "TKO", 1, 268, "wds-fight-night-14"],
+      ["WDS Fight Night 14", "2025-11-09", 18, "Flyweight", "Ashish Rawat", "Shivaraj Basappa", "R", "RNC", 3, 203, "wds-fight-night-14"],
+      ["WDS Fight Night 14", "2025-11-09", 19, "Bantamweight", "Karan Singh", "Ashok Bagde", "B", "SUBMISSION", 1, 157, "wds-fight-night-14"],
+      ["WDS Fight Night 16", "2026-03-28", 1, "Bantamweight", "Ashok Bagde", "Andrey Chelbaev", "R", "RNC", 2, 294, "wds-fight-night-16"],
+      ["WDS Fight Night 16", "2026-03-28", 2, "Lightweight", "Gurtej Singh", "Rishabh Patel", "R", "CORNER_STOPPAGE", 2, 300, "wds-fight-night-16"],
+      ["WDS Fight Night 16", "2026-03-28", 3, "Flyweight", "Harsh Pandya", "Amit Amauriya", "R", "RNC", 2, 172, "wds-fight-night-16"],
+      ["WDS Fight Night 16", "2026-03-28", 4, "Bantamweight", "Karan Jadhav", "Karandeep Singh", "R", "SUBMISSION", 3, 66, "wds-fight-night-16"],
+      ["WDS Fight Night 16", "2026-03-28", 5, "Flyweight", "Anubhav Kashyap", "Rehan Rizvi", "R", "TKO", 2, 88, "wds-fight-night-16"],
+      ["WDS Fight Night 17", "2026-06-06", 1, "Welterweight", "Ben Holdsworth", "Kimson Tony", "R", "DECISION_UNANIMOUS", 3, 300, "wds-fight-night-17"],
+      ["WDS Fight Night 17", "2026-06-06", 2, "Bantamweight", "Ashok Bagde", "Rohit Raina", "R", "SUBMISSION", 2, 87, "wds-fight-night-17"],
+      ["WDS Fight Night 17", "2026-06-06", 3, "Featherweight", "Muhiddinov Oyatullo", "Kesavan M", "R", "SUBMISSION", 1, 286, "wds-fight-night-17"],
+      ["WDS Fight Night 17", "2026-06-06", 4, "Flyweight", "A Shabarish", "Thiaumuanlal Guite", "R", "DECISION_UNANIMOUS", 3, 300, "wds-fight-night-17"],
+      ["WDS Fight Night 17", "2026-06-06", 5, "Featherweight", "Raj Singh Baghel", "Rajkumar R", "R", "RNC", 1, 190, "wds-fight-night-17"],
+      ["WDS Fight Night 17", "2026-06-06", 6, "Flyweight", "Sangramsingh Godse", "Sagar Ramdas Dange", "R", "TKO", 2, 213, "wds-fight-night-17"],
+      ["WDS Fight Night 17", "2026-06-06", 7, "Lightweight", "Varun Sanyal", "Karan Chauhan", "R", "RNC", 1, 264, "wds-fight-night-17"],
+      ["WDS Rising Star 7", "2026-07-25", 1, "Lightweight", "Pruthvi Gulla", "Shreenath Barale", "R", "DECISION_UNANIMOUS", 3, 240, "wds-rising-star-7"],
+      ["WDS Rising Star 7", "2026-07-25", 2, "Flyweight", "Shrishti Dethe", "Parth Sapkal", "R", "DECISION_UNANIMOUS", 3, 240, "wds-rising-star-7"],
+      ["WDS Rising Star 7", "2026-07-25", 3, "Flyweight", "Bhuvan Rai", "Vijay Yadav", "R", "RNC", 2, 220, "wds-rising-star-7"],
+      ["WDS Rising Star 7", "2026-07-25", 4, "Bantamweight", "Ashish Maurya", "Rajkrishna Sharma", "R", "CORNER_STOPPAGE", 3, 156, "wds-rising-star-7"],
+      ["WDS Rising Star 7", "2026-07-25", 5, "Middleweight", "Avaneesh Kailash Patil", "Mittul Rajput", "R", "DECISION_UNANIMOUS", 3, 240, "wds-rising-star-7"],
+      ["WDS Rising Star 7", "2026-07-25", 6, "Strawweight", "Narayan Tejbeer Pun", "Ritesh Kanojiya", "R", "DECISION_UNANIMOUS", 3, 240, "wds-rising-star-7"],
+      ["WDS Fight Night 18", "2026-08-29", 1, "Flyweight", "Kimbert Alintozon", "Jeko Laishram", "B", "DECISION_UNANIMOUS", 3, 300, "wds-fight-night-18"],
+      ["WDS Fight Night 18", "2026-08-29", 2, "Light Heavyweight", "Gaganpal Singh Dua", "Tarun M Hiremath", "R", "TKO", 1, 222, "wds-fight-night-18"],
+      ["WDS Fight Night 18", "2026-08-29", 3, "Flyweight", "Bishal Sahu", "E. Sandigon", "R", "TKO", 1, 291, "wds-fight-night-18"],
+      ["WDS Fight Night 18", "2026-08-29", 4, "Flyweight", "Shoaib Khan", "JR Alejandro", "R", "TKO", 1, 259, "wds-fight-night-18"],
+      ["WDS Fight Night 18", "2026-08-29", 5, "Bantamweight", "Mansur Yakhyaev", "Ajay Singh Dhoni", "R", "DECISION_SPLIT", 3, 300, "wds-fight-night-18"],
+      ["WDS Fight Night 18", "2026-08-29", 6, "Welterweight", "Sharip Omarov", "Daksh Saxena", "R", "TKO", 2, 213, "wds-fight-night-18"],
+      ["WDS Fight Night 18", "2026-08-29", 7, "Flyweight", "Sangramsingh Godse", "Santosh Yadav", "R", "KO_HEAD", 1, 287, "wds-fight-night-18"],
+      ["WDS Fight Night 18", "2026-08-29", 8, "Flyweight", "Sagar Ramdas Dange", "Nikhil Prajapati", "R", "TKO", 1, 321, "wds-fight-night-18"]
+    ];
+
+    const ALL_DIVISIONS = MEN_DIVISIONS.concat(WOMEN_DIVISIONS);
+    const DIVISION_BY_KEY = {};
+    ALL_DIVISIONS.forEach(d => { DIVISION_BY_KEY[d.key] = d; });
+
+    function norm(name) { return String(name || '').trim().toLowerCase().replace(/\s+/g, ' '); }
+    function divisionKey(weightClass) { return norm(weightClass).replace(/[^a-z]/g, ''); }
+
+    function winWeight(weights, resultType, round) {
+      const w = weights[resultType];
+      if (w == null) return 0;
+      if (Array.isArray(w)) return w[Math.min(Math.max(round || 3, 1), 3) - 1] || 0;
+      return w;
     }
-
-    let divisions = emptyDivisions();
-
-    // Committee formula: (Win% × 0.7 + sum of win method weights × 0.3) × √(total fights)
     function rankingScore(f) {
-      const total = f.wins + f.losses + (f.draws || 0);
+      const total = f.wins + f.losses + f.draws;
       if (!total) return 0;
-      return ((f.wins / total) * 100 * 0.7 + f.methodPoints * 0.3) * Math.sqrt(total);
+      return ((100 * f.wins / total) * 0.7 + f.methodPoints * 0.3) * Math.sqrt(total);
     }
     function byScore(a, b) {
-      return (b.score - a.score) || (b.wins - a.wins) || (a.order - b.order);
+      return (b.score - a.score) || (b.wins - a.wins) || a.name.localeCompare(b.name);
     }
 
-    // Offline fallback: the saved list above (its win methods were not recorded,
-    // so each win counts as a decision, 0.55 — the same as in the database).
-    const DECISION_WEIGHT = 0.55;
-    function divisionsFromFights() {
-      const d = emptyDivisions();
-      const fighterStats = {};
-      let order = 0;
-      fights.forEach(fight => {
-        [fight.fighter1, fight.fighter2].forEach(name => {
-          if (!fighterStats[name]) {
-            fighterStats[name] = { name: name, division: fight.division, wins: 0, losses: 0, draws: 0, methodPoints: 0, order: ++order };
-          }
+    // Which ranking division a professional bout belongs to (null = not ranked).
+    function rankedDivision(b) {
+      let key = divisionKey(b.weightClass) || DIVISION_FIXES[norm(b.red) + '|' + norm(b.blue)] ||
+                DIVISION_FIXES[norm(b.blue) + '|' + norm(b.red)] || '';
+      const women = WOMEN_FIGHTERS.has(norm(b.red)) || WOMEN_FIGHTERS.has(norm(b.blue));
+      if (women) key = 'w-' + key;
+      return DIVISION_BY_KEY[key] ? key : null;
+    }
+
+    function buildDivisions(bouts, weights) {
+      const d = {};
+      ALL_DIVISIONS.forEach(x => { d[x.key] = { key: x.key, name: x.name, subtitle: x.subtitle, champion: null, fighters: [] }; });
+      const stats = {};
+      const get = name => stats[name] || (stats[name] = { name, wins: 0, losses: 0, draws: 0, ncs: 0, methodPoints: 0, division: null, last: null });
+
+      bouts
+        .map(b => Object.assign({}, b, { division: rankedDivision(b) }))
+        .filter(b => b.division && b.red && b.blue)
+        .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.boutNumber - b.boutNumber))
+        .forEach(b => {
+          [[b.red, b.blue, 'R'], [b.blue, b.red, 'B']].forEach(([name, opponent, corner]) => {
+            const f = get(name);
+            const before = rankingScore(f);
+            let outcome, earned = 0;
+            if (b.resultType === 'NO_CONTEST') { outcome = 'NC'; f.ncs++; }
+            else if (b.winner === corner) { outcome = 'W'; f.wins++; earned = winWeight(weights, b.resultType, b.round); f.methodPoints += earned; }
+            else if (b.winner) { outcome = 'L'; f.losses++; }
+            else { outcome = 'D'; f.draws++; }
+            f.division = b.division;
+            f.last = { outcome, resultType: b.resultType, round: b.round, sec: b.sec, opponent, event: b.event, earned, change: rankingScore(f) - before };
+          });
         });
-        const loser = fight.winner === fight.fighter1 ? fight.fighter2 : fight.fighter1;
-        fighterStats[fight.winner].wins++;
-        fighterStats[fight.winner].methodPoints += DECISION_WEIGHT;
-        fighterStats[loser].losses++;
-      });
 
-      Object.keys(fighterStats).forEach(fighterName => {
-        const fighter = fighterStats[fighterName];
-        fighter.record = `${fighter.wins}-${fighter.losses}`;
-        fighter.score = rankingScore(fighter);
-        if (d[fighter.division]) {
-          d[fighter.division].fighters.push(fighter);
-        }
+      Object.values(stats).forEach(f => {
+        f.score = rankingScore(f);
+        f.record = `${f.wins}-${f.losses}-${f.draws}` + (f.ncs ? ` (${f.ncs} NC)` : '');
+        d[f.division].fighters.push(f);
       });
-
-      Object.keys(d).forEach(key => {
-        d[key].fighters.sort(byScore);
+      Object.values(d).forEach(div => {
+        div.fighters.sort(byScore);
+        // Champion badge only for a fighter with at least one professional win.
+        div.champion = div.fighters.length && div.fighters[0].wins > 0 ? div.fighters[0].name : null;
       });
       return d;
     }
 
-    // Live: rankings computed in the WDS database from FINALIZED results only.
-    function divisionsFromDatabase(rows) {
-      const d = emptyDivisions();
-      rows.forEach(r => {
-        if (!d[r.division_key]) {
-          d[r.division_key] = { name: r.division_name, subtitle: '', champion: null, fighters: [] };
-        }
-        d[r.division_key].fighters.push({
-          name: r.name,
-          division: r.division_key,
-          wins: r.wins,
-          losses: r.losses,
-          score: Number(r.score),
-          rank: r.division_rank,
-          order: r.overall_rank,
-          last: r.last || null,
-          record: r.draws ? `${r.wins}-${r.losses}-${r.draws}` : `${r.wins}-${r.losses}`
-        });
-      });
-      Object.keys(d).forEach(key => {
-        d[key].fighters.sort((a, b) => a.rank - b.rank);
-      });
-      return d;
+    function fromSaved(row) {
+      return { event: row[0], date: row[1], boutNumber: row[2], weightClass: row[3], red: row[4], blue: row[5],
+               winner: row[6], resultType: row[7], round: row[8], sec: row[9], slug: row[10] };
     }
 
-    function finishDivisions(d) {
-      d.all.fighters = Object.keys(d)
-        .filter(key => key !== 'all')
-        .reduce((acc, key) => acc.concat(d[key].fighters), [])
-        .sort(byScore);
-
-      Object.keys(d).forEach(key => {
-        if (key !== 'all' && d[key].fighters.length > 0) {
-          d[key].champion = d[key].fighters[0].name;
-        }
-      });
-      return d;
-    }
-
-    // Display tiers for the score badge.
+    // ---- rendering --------------------------------------------------------
     function getRatingClass(score) {
       if (score >= 100) return 'elo-elite';
       if (score >= 60) return 'elo-strong';
@@ -541,131 +628,146 @@
     function escapeText(value) {
       return String(value == null ? '' : value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
+    function clock(sec) { return sec == null ? '' : Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); }
+    function signed(n) { return (n > 0 ? '+' : n < 0 ? '−' : '±') + Math.abs(n).toFixed(2); }
 
-    // Latest finalized fight: how it ended and the points it gave.
     function lastFightLine(last) {
-      if (!last || !window.WDS) return '';
-      const change = Number(last.score_change || 0);
-      const cls = change > 0 ? 'pts-up' : change < 0 ? 'pts-down' : '';
-      const method = last.outcome === 'W' ? ` · method <strong>+${Number(last.method_weight).toFixed(2)}</strong>` : '';
-      return `<span class="fighter-last">Last fight: ${escapeText(window.WDS.outcomeText(last))} vs ${escapeText(last.opponent_name || 'TBA')}` +
-        `${last.event_title ? ' · ' + escapeText(last.event_title) : ''}${method} · score <span class="${cls}">${window.WDS.signed(change)}</span></span>`;
-    }
-
-    function formatScore(score) {
-      return Number(score).toFixed(2);
+      if (!last) return '';
+      const how = RESULT_LABEL[last.resultType] || last.resultType || '';
+      const when = last.round && !/^DECISION|DRAW|NO_CONTEST/.test(last.resultType || '') ? ` · R${last.round} ${clock(last.sec)}` : '';
+      const text = last.outcome === 'W' ? `Won by ${how}${when}` : last.outcome === 'L' ? `Lost by ${how}${when}` :
+                   last.outcome === 'D' ? `${how}` : 'No contest';
+      const cls = last.change > 0 ? 'pts-up' : last.change < 0 ? 'pts-down' : '';
+      const method = last.outcome === 'W' ? ` · method <strong>+${last.earned.toFixed(2)}</strong>` : '';
+      return `<span class="fighter-last">Last fight: ${escapeText(text)} vs ${escapeText(last.opponent)}` +
+        ` · ${escapeText(last.event)}${method} · score <span class="${cls}">${signed(last.change)}</span></span>`;
     }
 
     function createRankingTable(division) {
-      let table = '<table class="rankings-table"><thead><tr><th style="width: 50px">Rank</th><th>Fighter</th><th style="width: 100px">Record</th><th style="width: 120px">Score</th></tr></thead><tbody>';
-
+      if (!division.fighters.length) {
+        return '<p class="rk-empty">No ranked professional fighters in this division yet.</p>';
+      }
+      let table = '<table class="rankings-table"><thead><tr><th style="width: 50px">Rank</th><th>Fighter</th><th style="width: 110px">Record</th><th style="width: 120px">Score</th></tr></thead><tbody>';
       division.fighters.forEach((fighter, index) => {
-        const ratingClass = getRatingClass(fighter.score);
         table += `<tr>
           <td class="rank-num">${index + 1}</td>
           <td>
             <div class="fighter-info">
-              <span class="fighter-name">${fighter.name}</span>
-              <span class="fighter-div">${fighter.division}</span>
+              <span class="fighter-name">${escapeText(fighter.name)}</span>
+              <span class="fighter-div">${escapeText(division.name)}</span>
               ${lastFightLine(fighter.last)}
             </div>
           </td>
           <td>${fighter.record}</td>
-          <td><span class="elo-rating ${ratingClass}">${formatScore(fighter.score)}</span></td>
+          <td><span class="elo-rating ${getRatingClass(fighter.score)}">${fighter.score.toFixed(2)}</span></td>
         </tr>`;
       });
-
-      table += '</tbody></table>';
-      return table;
+      return table + '</tbody></table>';
     }
 
     function createDivisionButtons() {
       const selectorSection = document.getElementById('selectorSection');
-      const divisionKeys = Object.keys(divisions);
-
-      divisionKeys.forEach((key, index) => {
-        const btn = document.createElement('button');
-        btn.className = `div-btn ${index === 0 ? 'active' : ''}`;
-        btn.textContent = divisions[key].name;
-        btn.onclick = () => switchDivision(key, btn);
-        selectorSection.appendChild(btn);
+      [['Men', MEN_DIVISIONS], ['Women', WOMEN_DIVISIONS]].forEach(([label, list]) => {
+        const group = document.createElement('div');
+        group.className = 'division-group';
+        group.innerHTML = `<span class="division-group-label">${label}</span>`;
+        const row = document.createElement('div');
+        row.className = 'division-group-buttons';
+        list.forEach(meta => {
+          const btn = document.createElement('button');
+          btn.className = 'div-btn';
+          btn.dataset.division = meta.key;
+          btn.textContent = meta.name.replace("Women's ", '');
+          btn.onclick = () => switchDivision(meta.key);
+          row.appendChild(btn);
+        });
+        group.appendChild(row);
+        selectorSection.appendChild(group);
       });
     }
 
     function createDivisionCards() {
       const container = document.getElementById('divisionsContainer');
-      const divisionKeys = Object.keys(divisions);
-
-      divisionKeys.forEach((key, index) => {
-        const division = divisions[key];
+      ALL_DIVISIONS.forEach(meta => {
+        const division = divisions[meta.key];
         const card = document.createElement('section');
-        card.className = `division-card ${index === 0 ? 'active' : ''}`;
-        card.setAttribute('data-division', key);
-
+        card.className = 'division-card';
+        card.setAttribute('data-division', meta.key);
         let championSection = '';
         if (division.champion) {
           const championScore = division.fighters[0].score;
-          const championClass = getRatingClass(championScore);
           championSection = `
             <div class="champion">
               <div class="champion-badge">CHAMPION</div>
               <div class="champion-info">
-                <h3>${division.champion}</h3>
-                <p><span class="elo-rating ${championClass}">${formatScore(championScore)}</span></p>
+                <h3>${escapeText(division.champion)}</h3>
+                <p><span class="elo-rating ${getRatingClass(championScore)}">${championScore.toFixed(2)}</span></p>
               </div>
-            </div>
-          `;
+            </div>`;
         }
-
         card.innerHTML = `
           <div class="division-header">
-            <h2>${division.name}</h2>
-            <p>${division.subtitle}</p>
+            <h2>${escapeText(division.name)}</h2>
+            <p>${escapeText(division.subtitle)} · Professional</p>
           </div>
           ${championSection}
-          ${createRankingTable(division)}
-        `;
-
+          ${createRankingTable(division)}`;
         container.appendChild(card);
       });
     }
 
-    function switchDivision(divisionKey, buttonEl) {
+    function switchDivision(divisionKey) {
       activeDivision = divisionKey;
-      document.querySelectorAll('.div-btn').forEach(btn => btn.classList.remove('active'));
-      buttonEl.classList.add('active');
-
-      document.querySelectorAll('.division-card').forEach(card => card.classList.remove('active'));
-      document.querySelector(`[data-division="${divisionKey}"]`).classList.add('active');
+      document.querySelectorAll('.div-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.division === divisionKey));
+      document.querySelectorAll('.division-card').forEach(card => card.classList.toggle('active', card.dataset.division === divisionKey));
     }
 
-    let activeDivision = 'all';
+    let divisions = {};
+    let activeDivision = MEN_DIVISIONS[0].key;
 
     function render(d) {
-      divisions = finishDivisions(d);
+      divisions = d;
       document.getElementById('selectorSection').innerHTML = '';
       document.getElementById('divisionsContainer').innerHTML = '';
       createDivisionButtons();
       createDivisionCards();
-      const keys = Object.keys(divisions);
-      const index = Math.max(0, keys.indexOf(activeDivision));
-      const button = document.querySelectorAll('#selectorSection .div-btn')[index];
-      if (button) switchDivision(keys[index], button);
+      switchDivision(activeDivision);
     }
 
+    // Live: finalized professional bouts and the current method weights from the WDS database.
     function loadRankings() {
       if (!window.WDS || !window.WDS.enabled) return Promise.reject(new Error('offline'));
-      return Promise.all([window.WDS.rankings(), window.WDS.lastFights().catch(() => [])]).then(([rows, fights]) => {
-        if (!rows.length) throw new Error('no rankings yet');
-        const lastByFighter = {};
-        fights.forEach(f => { lastByFighter[f.fighter_id] = f; });
-        rows.forEach(r => { r.last = lastByFighter[r.fighter_id]; });
-        render(divisionsFromDatabase(rows));
+      return Promise.all([
+        window.WDS.events(),
+        window.WDS.rest('public_bout_card?select=event_id,bout_number,weight_class,red_name,blue_name,red_fighter_id,blue_fighter_id,winner_id,result_type,end_round,end_time_sec&bout_type=eq.PROFESSIONAL&discipline=eq.MMA&result_status=eq.final'),
+        window.WDS.rest('ranking_method_weights?select=result_type,round_no,weight').catch(() => null)
+      ]).then(([events, rows, weightRows]) => {
+        if (!rows.length) throw new Error('no professional results yet');
+        const eventsById = {};
+        events.forEach(e => { eventsById[e.id] = e; });
+        const weights = JSON.parse(JSON.stringify(DEFAULT_WEIGHTS));
+        if (weightRows && weightRows.length) {
+          weightRows.forEach(w => {
+            if (w.round_no === 0) { if (!Array.isArray(weights[w.result_type])) weights[w.result_type] = Number(w.weight); }
+            else {
+              if (!Array.isArray(weights[w.result_type])) weights[w.result_type] = [0, 0, 0];
+              weights[w.result_type][w.round_no - 1] = Number(w.weight);
+            }
+          });
+        }
+        const bouts = rows.map(r => {
+          const e = eventsById[r.event_id] || {};
+          return { event: e.title || '', date: e.event_date || '', slug: e.slug || '', boutNumber: r.bout_number,
+                   weightClass: r.weight_class, red: r.red_name, blue: r.blue_name,
+                   winner: r.winner_id && r.winner_id === r.red_fighter_id ? 'R' : r.winner_id && r.winner_id === r.blue_fighter_id ? 'B' : '',
+                   resultType: r.result_type, round: r.end_round, sec: r.end_time_sec };
+        });
+        render(buildDivisions(bouts, weights));
       });
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      render(divisionsFromFights());
+      render(buildDivisions(SAVED_PRO_BOUTS.map(fromSaved), DEFAULT_WEIGHTS));
       loadRankings()
         .then(() => window.WDS.subscribe(['fighter_rankings', 'bout_points'], () => loadRankings().catch(() => {})))
         .catch(e => console.warn('[wds] rankings: using the saved list', e && e.message));
