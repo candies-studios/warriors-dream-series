@@ -8,258 +8,366 @@
 <link rel="icon" type="image/png" sizes="32x32" href="../assets/images/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="../assets/images/favicon-192x192.png">
 <link rel="apple-touch-icon" href="../assets/images/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Michroma&family=Montserrat:wght@500;600;700&family=Open+Sans:wght@300;400;600&display=swap">
 <style>
-    /* Rankings page — layout modelled on ufc.com/rankings (header, footer & fonts come from ../css/style.css) */
+    /* Rankings page — layout modelled on pflmma.com/rankings (header, footer & base fonts come from ../css/style.css) */
     .rankings-main {
-      --rk-ink: #191919;
-      --rk-text: #585b63;
-      --rk-muted: #8a8d93;
-      --rk-red: #d20a0a;
-      --rk-line: #e2e2e2;
-      --rk-soft: #f6f6f6;
+      --pf-display: 'Michroma', 'Eurostile Extended', 'Arial Black', sans-serif;
+      --pf-name: 'Bebas Neue', 'Oswald', 'Arial Narrow', sans-serif;
+      --pf-ui: 'Montserrat', Arial, sans-serif;
+      --pf-body: 'Open Sans', Arial, sans-serif;
+      --pf-ink: #373737;
+      --pf-muted: #888888;
+      --pf-red: #ff0404;
+      --pf-navy: #052383;
+      --pf-line: #c1c1c1;
+      --pf-dark: #0b0b0b;
+      --pf-card: #1a1a1a;
+      --pf-card-line: #3a3a3a;
       background: #ffffff;
-      color: var(--rk-text);
-      padding: 0 0 40px;
-      font-family: 'Roboto Condensed', 'Arial Narrow', Arial, sans-serif;
+      color: var(--pf-muted);
+      font-family: var(--pf-body);
+      font-weight: 300;
     }
-    /* Hero Section (unchanged) */
-    .rk-hero {
-      position: relative;
-      height: 500px;
-      background: linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url('../assets/images/rankings-hero.jpg');
-      background-size: cover;
-      background-position: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 50px;
-    }
+    .pf-container { max-width: 1320px; margin: 0 auto; padding: 0 24px; }
 
-    .rk-hero h1 {
-      font-size: 120px;
-      color: white;
-      font-weight: 700;
-      letter-spacing: 2px;
-      line-height: 1;
-      margin: 0;
+    /* ---- Champions hero (dark band with a row of champion cards) ---- */
+    .pf-champions {
+      background-color: var(--pf-dark);
+      background-image: radial-gradient(ellipse at 50% 30%, rgba(80,80,80,0.35) 0%, rgba(11,11,11,0) 70%);
+      padding: 60px 0 40px;
+    }
+    .pf-champions-title {
+      font-family: var(--pf-display);
+      font-size: 40px;
+      line-height: 1.25;
+      letter-spacing: 0.4px;
       text-transform: uppercase;
-      text-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    }
-
-    .rk-wrap {
-      max-width: 1024px;
-      margin: 0 auto;
-      padding: 0 20px;
-    }
-
-    /* Page title */
-    .rk-header {
+      color: #fff;
       text-align: center;
-      margin-bottom: 18px;
+      margin: 0 0 8px;
     }
-    .rk-title {
-      font-family: 'Oswald', 'Arial Narrow', sans-serif;
-      font-size: 60px;
-      line-height: 1;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      color: var(--rk-ink);
-      margin: 0;
-    }
-    .rk-subtitle {
-      margin: 12px 0 0;
-      font-size: 13px;
-      letter-spacing: 1.2px;
-      text-transform: uppercase;
-      color: var(--rk-muted);
-    }
-
-    /* "How the ranking works" (collapsed by default) */
-    .rk-method {
-      max-width: 760px;
-      margin: 0 auto 50px;
-      text-align: center;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-    .rk-method summary {
-      display: inline-block;
-      cursor: pointer;
-      list-style: none;
+    .pf-champions-sub {
+      font-family: var(--pf-ui);
       font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 1.2px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
-      color: var(--rk-red);
+      color: #9a9a9a;
+      text-align: center;
+      margin: 0 0 40px;
     }
-    .rk-method summary::-webkit-details-marker { display: none; }
-    .rk-method summary::after { content: ' +'; }
-    .rk-method[open] summary::after { content: ' −'; }
-    .rk-method p { margin: 12px 0 0; color: var(--rk-text); }
-
-    /* Section headings (Men / Women) */
-    .rk-section { margin-bottom: 60px; }
-    .rk-section-title {
-      font-family: 'Oswald', 'Arial Narrow', sans-serif;
-      font-size: 28px;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--rk-ink);
-      margin: 0 0 26px;
-      padding-bottom: 10px;
-      border-bottom: 3px solid var(--rk-ink);
+    .pf-track {
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      padding: 0 0 24px;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: thin;
+      scrollbar-color: #444 transparent;
     }
-
-    /* Division grid: four columns like ufc.com */
-    .rk-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      column-gap: 20px;
-      row-gap: 56px;
-      align-items: start;
+    .pf-track::-webkit-scrollbar { height: 6px; }
+    .pf-track::-webkit-scrollbar-thumb { background: #444; }
+    .pf-card {
+      position: relative;
+      flex: 0 0 246px;
+      height: 410px;
+      overflow: hidden;
+      background-color: var(--pf-card);
+      background-image: radial-gradient(ellipse at 50% 35%, rgba(140,20,20,0.45) 0%, rgba(26,26,26,0) 65%);
+      border: 1px solid var(--pf-card-line);
+      scroll-snap-align: start;
+      color: #fff;
+      text-decoration: none;
+      transition: border-color .2s ease;
     }
-    .rk-division { min-width: 0; }
-
-    /* Champion block */
-    .rk-champ { border-bottom: 1px solid var(--rk-line); }
-    .rk-division-name {
-      font-family: 'Oswald', 'Arial Narrow', sans-serif;
-      font-size: 14px;
-      font-weight: 700;
+    a.pf-card:hover { border-color: var(--pf-red); }
+    .pf-card.is-vacant { background-image: radial-gradient(ellipse at 50% 35%, rgba(90,90,90,0.35) 0%, rgba(26,26,26,0) 65%); }
+    .pf-card-division {
+      position: absolute;
+      top: 16px; left: 12px;
+      z-index: 3;
+      padding-left: 8px;
+      border-left: 3px solid var(--pf-red);
+      font-family: var(--pf-display);
+      font-size: 10px;
+      line-height: 1.2;
       letter-spacing: 0.2px;
       text-transform: uppercase;
-      color: var(--rk-red);
-      margin: 0;
-      line-height: 1.4;
-      min-height: 28px;
+      color: #fff;
+      max-width: 200px;
     }
-    .rk-division-weight {
-      color: var(--rk-muted);
-      font-weight: 500;
-      margin-left: 4px;
+    .pf-card-weight { display: block; margin-top: 3px; font-family: var(--pf-ui); font-weight: 600; color: #9a9a9a; letter-spacing: 1px; }
+    .pf-card-watermark {
+      position: absolute;
+      top: 50%; right: -6px;
+      z-index: 0;
+      transform: translateY(-50%);
+      writing-mode: vertical-rl;
+      font-family: var(--pf-display);
+      font-size: 52px;
+      line-height: 1;
+      text-transform: uppercase;
       white-space: nowrap;
+      color: transparent;
+      -webkit-text-stroke: 1px rgba(255,255,255,0.07);
+      pointer-events: none;
     }
-    .rk-champ-name {
-      font-family: 'Oswald', 'Arial Narrow', sans-serif;
-      font-size: 24px;
-      line-height: 1.15;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--rk-ink);
-      margin: 10px 0 0;
-      min-height: 55px;
-      overflow-wrap: anywhere;
-    }
-    .rk-champ-label {
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 1.2px;
-      text-transform: uppercase;
-      color: var(--rk-text);
-      margin: 10px 0 0;
-    }
-    .rk-champ-label .rk-champ-stats {
-      color: var(--rk-muted);
-      font-weight: 500;
-      letter-spacing: 0.4px;
-      margin-left: 6px;
-    }
-    .rk-champ-photo {
-      height: 150px;
-      margin-top: 8px;
+    .pf-card-img {
+      position: absolute;
+      left: 0; right: 0; bottom: 50px;
+      z-index: 1;
+      height: 300px;
       display: flex;
       align-items: flex-end;
       justify-content: center;
-      overflow: hidden;
     }
-    .rk-champ-photo img {
-      max-height: 150px;
-      max-width: 100%;
-      object-fit: contain;
-      object-position: bottom;
-      display: block;
+    .pf-card-img img { max-width: 100%; max-height: 100%; object-fit: contain; object-position: bottom; display: block; }
+    .pf-card-img svg { width: 150px; height: 170px; color: #2c2c2c; }
+    .pf-card-info {
+      position: absolute;
+      left: 12px; right: 12px; bottom: 14px;
+      z-index: 2;
     }
-    .rk-champ-photo svg { width: 120px; height: 130px; display: block; color: #d9d9db; }
-    .rk-vacant .rk-champ-name { color: var(--rk-muted); }
-
-    /* Ranked list */
-    .rk-list {
-      list-style: none;
-      margin: 0;
-      padding: 14px 0 0;
+    .pf-card-info::before {
+      content: '';
+      position: absolute;
+      left: -13px; right: -13px; bottom: -15px;
+      height: 150px;
+      background: linear-gradient(to top, rgba(14,14,14,0.96) 35%, rgba(14,14,14,0));
+      z-index: -1;
     }
-    .rk-row { border-bottom: 1px solid transparent; }
-    .rk-row-btn {
-      display: grid;
-      grid-template-columns: 26px minmax(0, 1fr) auto;
+    .pf-card-meta { display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; }
+    .pf-badge {
+      display: inline-flex;
       align-items: center;
-      gap: 6px;
-      width: 100%;
-      padding: 7px 0;
-      background: none;
-      border: 0;
-      cursor: pointer;
-      text-align: left;
-      font: inherit;
-      color: inherit;
-    }
-    .rk-rank {
-      font-family: 'Oswald', 'Arial Narrow', sans-serif;
-      font-size: 14px;
+      gap: 5px;
+      font-family: var(--pf-ui);
+      font-size: 9px;
       font-weight: 700;
-      letter-spacing: 0.2px;
-      color: var(--rk-ink);
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: var(--pf-red);
     }
-    .rk-name {
-      font-size: 14px;
-      color: var(--rk-text);
-      text-transform: capitalize;
-      overflow-wrap: anywhere;
+    .pf-badge svg { width: 18px; height: 12px; display: block; }
+    .pf-card-record { font-family: var(--pf-ui); font-size: 10px; font-weight: 600; color: #9a9a9a; letter-spacing: 0.5px; }
+    .pf-card-name {
+      font-family: var(--pf-name);
+      font-size: 34px;
+      font-weight: 400;
+      line-height: 0.9;
+      color: #fff;
+      margin: 6px 0 0;
+      min-height: 61px;
+      display: flex;
+      align-items: flex-end;
+      overflow-wrap: break-word;
     }
-    .rk-record {
-      font-family: 'Oswald', 'Arial Narrow', sans-serif;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--rk-muted);
-      white-space: nowrap;
-    }
-    .rk-row-btn:hover .rk-name { color: var(--rk-red); text-decoration: underline; }
-    .rk-champ-name a { color: inherit; }
-    .rk-champ-name a:hover { color: var(--rk-red); }
+    .pf-card-name.is-long { font-size: 28px; }
+    .is-vacant .pf-card-name { color: #8a8a8a; }
 
-    .rk-more {
-      margin-top: 10px;
-      padding: 0;
-      background: none;
-      border: 0;
+    /* ---- Fighter rankings grid ---- */
+    .pf-rankings { padding: 70px 0 40px; }
+    .pf-rankings-title {
+      font-family: var(--pf-display);
+      font-size: 32px;
+      line-height: 1.5;
+      letter-spacing: 0.32px;
+      text-transform: uppercase;
+      color: var(--pf-ink);
+      margin: 0 0 6px;
+      text-align: center;
+    }
+    .pf-method {
+      max-width: 760px;
+      margin: 0 auto 48px;
+      text-align: center;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #6a6a6a;
+    }
+    .pf-method summary {
+      display: inline-block;
       cursor: pointer;
-      font-family: 'Oswald', 'Arial Narrow', sans-serif;
+      list-style: none;
+      font-family: var(--pf-ui);
       font-size: 12px;
       font-weight: 700;
       letter-spacing: 1px;
       text-transform: uppercase;
-      color: var(--rk-red);
+      color: var(--pf-navy);
     }
-    .rk-more:hover { text-decoration: underline; }
-    .rk-empty {
-      padding: 14px 0 0;
-      font-size: 13px;
-      color: var(--rk-muted);
-    }
+    .pf-method summary::-webkit-details-marker { display: none; }
+    .pf-method summary::after { content: ' +'; }
+    .pf-method[open] summary::after { content: ' −'; }
+    .pf-method p { margin: 12px 0 0; }
+    .pf-method strong { font-weight: 600; color: var(--pf-ink); }
 
-    @media (max-width: 900px) {
-      .rk-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; }
+    .pf-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      column-gap: 24px;
+      row-gap: 48px;
+      align-items: start;
     }
-    @media (max-width: 560px) {
-      .rk-hero { height: 320px; overflow: hidden; }
-      .rk-hero h1 { font-size: clamp(48px, 16vw, 72px); }
-      .rk-wrap { padding: 0 16px; }
-      .rk-title { font-size: 40px; }
-      .rk-grid { grid-template-columns: minmax(0, 1fr); row-gap: 44px; }
-      .rk-champ-photo { height: 170px; }
-      .rk-champ-photo img { max-height: 170px; }
-      .rk-champ-name { min-height: 0; }
+    .pf-box { min-width: 0; }
+    .pf-box-title {
+      border-bottom: 1px solid var(--pf-line);
+      text-align: center;
+      margin: 0 0 16px;
+    }
+    .pf-box-title h3 {
+      margin: 0;
+      padding: 0 0 16px;
+      font-family: var(--pf-ui);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.13px;
+      text-transform: uppercase;
+      color: var(--pf-navy);
+    }
+    .pf-box-title button {
+      all: unset;
+      display: block;
+      width: 100%;
+      cursor: default;
+    }
+    .pf-box-weight { color: var(--pf-muted); font-weight: 600; margin-left: 6px; }
+    .pf-chevron { display: none; }
+
+    .pf-top { position: relative; overflow: hidden; }
+    .pf-top-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--pf-ui);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--pf-red);
+      margin: 0 0 6px;
+    }
+    .pf-top-badge svg { width: 22px; height: 14px; display: block; }
+    .pf-top-name {
+      font-family: var(--pf-name);
+      font-size: 40px;
+      font-weight: 400;
+      line-height: 0.9;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      color: var(--pf-ink);
+      margin: 0 0 6px;
+      min-height: 72px;
+      overflow-wrap: anywhere;
+    }
+    .pf-top-name a { color: inherit; text-decoration: none; }
+    .pf-top-name a:hover { color: var(--pf-red); }
+    .pf-top.is-vacant .pf-top-name { color: #b3b3b3; }
+    .pf-top-record {
+      font-family: var(--pf-ui);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.6px;
+      color: var(--pf-muted);
+      margin: 0;
+      min-height: 14px;
+    }
+    .pf-top-img {
+      height: 166px;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      margin-top: 6px;
+      border-bottom: 1px solid var(--pf-line);
+    }
+    .pf-top-img img { width: 72%; max-width: 240px; height: auto; display: block; object-fit: contain; object-position: top; }
+    .pf-top-img svg { width: 130px; height: 150px; margin-top: 16px; color: #e3e3e3; display: block; }
+
+    .pf-list { list-style: none; margin: 8px 0 0; padding: 0; }
+    .pf-line { margin: 8px 0; }
+    .pf-line a {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      color: inherit;
+    }
+    .pf-rank {
+      flex: 0 0 22px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      color: #fff;
+      font-family: var(--pf-body);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .pf-head {
+      flex: 0 0 30px;
+      width: 30px;
+      height: 30px;
+      margin: 0 8px;
+      border-radius: 50%;
+      overflow: hidden;
+      background: #ececec;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--pf-ui);
+      font-size: 10px;
+      font-weight: 700;
+      color: #9a9a9a;
+    }
+    .pf-head img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 8%; display: block; transform: scale(1.6); transform-origin: 50% 0; }
+    .pf-name {
+      flex: 1 1 auto;
+      min-width: 0;
+      font-family: var(--pf-ui);
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.2;
+      color: var(--pf-ink);
+      overflow-wrap: anywhere;
+    }
+    .pf-record {
+      flex: 0 0 auto;
+      margin-left: 6px;
+      font-family: var(--pf-body);
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--pf-muted);
+      white-space: nowrap;
+    }
+    .pf-line a:hover .pf-name { color: var(--pf-red); }
+    .pf-empty { font-family: var(--pf-ui); font-size: 13px; font-weight: 500; color: var(--pf-muted); margin: 14px 0 0; }
+
+    @media (max-width: 1100px) {
+      .pf-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 991px) {
+      .pf-champions-title { font-size: 32px; }
+    }
+    /* Mobile: one column, each division collapses behind its title like pflmma.com */
+    @media (max-width: 767px) {
+      .pf-container { padding: 0 16px; }
+      .pf-champions { padding: 40px 0 28px; }
+      .pf-champions-title { font-size: 24px; }
+      .pf-champions-sub { margin-bottom: 26px; }
+      .pf-rankings { padding: 44px 0 24px; }
+      .pf-rankings-title { font-size: 22px; }
+      .pf-grid { grid-template-columns: minmax(0, 1fr); row-gap: 0; }
+      .pf-box-title { margin: 0; }
+      .pf-box-title button { cursor: pointer; }
+      .pf-box-title h3 { padding: 22px 0; }
+      .pf-chevron { display: inline-block; width: 10px; height: 10px; margin-left: 8px; vertical-align: 1px; transition: transform .2s ease; }
+      .pf-box.open .pf-chevron { transform: rotate(180deg); }
+      .pf-box-body { display: none; padding: 16px 0 24px; }
+      .pf-box.open .pf-box-body { display: block; }
+      .pf-top-name { min-height: 0; }
     }
 </style>
 </head>
@@ -308,31 +416,28 @@
 </div>
 
 <main class="rankings-main">
-  <!-- Hero Section -->
-  <section class="rk-hero">
-    <h1>Rankings</h1>
+  <!-- Champions hero (pflmma.com style) -->
+  <section class="pf-champions" aria-labelledby="pf-champions-title">
+    <div class="pf-container">
+      <h1 class="pf-champions-title" id="pf-champions-title">WDS Champions</h1>
+      <p class="pf-champions-sub">Professional MMA · Official, finalized results</p>
+      <div class="pf-track" id="championsTrack"></div>
+    </div>
   </section>
 
-  <div class="rk-wrap">
-    <header class="rk-header">
-      <p class="rk-subtitle">Professional MMA · Official, finalized results</p>
-    </header>
+  <!-- Fighter rankings: top 10 per division -->
+  <section class="pf-rankings" aria-labelledby="pf-rankings-title">
+    <div class="pf-container">
+      <h2 class="pf-rankings-title" id="pf-rankings-title">WDS Fighter Rankings</h2>
 
-    <details class="rk-method">
-      <summary>How the ranking works</summary>
-      <p><strong>WDS Ranking Score</strong> = (Win% × 0.7 + Win Method Weight × 0.3) × √(total fights). Every win adds a weight for how it was won — earlier finishes count more (KO/TKO R1 0.75 · R2 0.70 · R3 0.65, Submission R1 0.70 · R2 0.65 · R3 0.60, Decision 0.55). Only official, finalized <strong>professional</strong> MMA bouts count — amateur bouts are not ranked. Women are ranked separately. Click a fighter to see their profile and every WDS fight they have had.</p>
-    </details>
+      <details class="pf-method">
+        <summary>How the ranking works</summary>
+        <p><strong>WDS Ranking Score</strong> = (Win% × 0.7 + Win Method Weight × 0.3) × √(total fights). Every win adds a weight for how it was won — earlier finishes count more (KO/TKO R1 0.75 · R2 0.70 · R3 0.65, Submission R1 0.70 · R2 0.65 · R3 0.60, Decision 0.55). Only official, finalized <strong>professional</strong> MMA bouts count — amateur bouts are not ranked. Women are ranked separately. Each division shows its champion and the top 10 contenders. Click a fighter to see their profile and every WDS fight they have had.</p>
+      </details>
 
-    <section class="rk-section" aria-labelledby="rk-men-title">
-      <h2 class="rk-section-title" id="rk-men-title">Men</h2>
-      <div class="rk-grid" id="menGrid"></div>
-    </section>
-
-    <section class="rk-section" aria-labelledby="rk-women-title">
-      <h2 class="rk-section-title" id="rk-women-title">Women</h2>
-      <div class="rk-grid" id="womenGrid"></div>
-    </section>
-  </div>
+      <div class="pf-grid" id="rankingsGrid"></div>
+    </div>
+  </section>
 </main>
 
 <footer class="site-footer">
@@ -592,7 +697,7 @@
                winner: row[6], resultType: row[7], round: row[8], sec: row[9], slug: row[10] };
     }
 
-    // ---- rendering (layout modelled on ufc.com/rankings) ---------------------
+    // ---- rendering (layout modelled on pflmma.com/rankings) ---------------------
     // Fighter cut-out photos kept in assets/images (used when the database has no photo).
     const FIGHTER_PHOTOS = {
       'jeko laishram': 'Jeko_Laishram.png',
@@ -609,8 +714,10 @@
       'thiaumuanlal guite': 'Thiaumuanlal_Guite.png',
       'ajay singh dhoni': 'Ajay_Singh_Dhoni.png'
     };
-    const TOP_SHOWN = 15;   // like ufc.com: top 15 shown, the rest behind "Show all"
+    const TOP_SHOWN = 10;   // like pflmma.com: champion + the top 10 contenders per division
     const SILHOUETTE = '<svg viewBox="0 0 120 130" aria-hidden="true"><circle cx="60" cy="38" r="26" fill="currentColor"/><path d="M8 130c4-38 26-58 52-58s48 20 52 58z" fill="currentColor"/></svg>';
+    const CROWN = '<svg viewBox="0 0 24 16" aria-hidden="true"><path d="M2 14h20l1.5-11-6.5 5L12 0 7 8 .5 3z" fill="currentColor"/></svg>';
+    const CHEVRON = '<svg class="pf-chevron" viewBox="0 0 10 10" aria-hidden="true"><path d="M1 3l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>';
 
     function escapeText(value) {
       return String(value == null ? '' : value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -633,63 +740,97 @@
       return 'fighter.html?' + q.toString();
     }
 
-    function fighterRow(fighter, rank, hidden, division) {
-      return `<li class="rk-row"${hidden ? ' hidden data-extra' : ''}>
-          <a class="rk-row-btn" href="${profileLink(fighter, rank, division)}" title="${escapeText(fighter.record)} · score ${fighter.score.toFixed(2)}">
-            <span class="rk-rank">${rank}</span>
-            <span class="rk-name">${escapeText(fighter.name)}</span>
-            <span class="rk-record">${escapeText(fighter.record)}</span>
+    function initials(name) {
+      return String(name || '').trim().split(/\s+/).slice(0, 2).map(p => p[0] || '').join('').toUpperCase();
+    }
+
+    // One numbered line: black rank box · round headshot · name · record.
+    function rankingLine(fighter, rank, division) {
+      const photo = photoFor(fighter);
+      const head = photo
+        ? `<img src="${escapeText(photo)}" alt="" loading="lazy" onerror="this.replaceWith(document.createTextNode('${escapeText(initials(fighter.name))}'))">`
+        : escapeText(initials(fighter.name));
+      return `<li class="pf-line">
+          <a href="${profileLink(fighter, rank, division)}" title="${escapeText(fighter.record)} · score ${fighter.score.toFixed(2)}">
+            <span class="pf-rank">${rank}</span>
+            <span class="pf-head">${head}</span>
+            <span class="pf-name">${escapeText(fighter.name)}</span>
+            <span class="pf-record">${escapeText(fighter.record)}</span>
           </a>
         </li>`;
     }
 
-    function divisionBlock(division) {
-      const fighters = division.fighters;
-      const champ = division.champion ? fighters[0] : null;
-      const ranked = champ ? fighters.slice(1) : fighters;
+    function championOf(division) {
+      return division.champion ? division.fighters[0] : null;
+    }
+
+    // Dark champion card for the hero strip.
+    function championCard(division) {
+      const champ = championOf(division);
       const photo = champ ? photoFor(champ) : null;
-      const champHtml = `
-        <div class="rk-champ${champ ? '' : ' rk-vacant'}">
-          <h3 class="rk-division-name">${escapeText(division.name)}<span class="rk-division-weight">${escapeText(division.subtitle)}</span></h3>
-          <p class="rk-champ-name">${champ ? `<a href="${profileLink(champ, 'C', division)}">${escapeText(champ.name)}</a>` : 'Vacant'}</p>
-          <p class="rk-champ-label">Champion${champ ? `<span class="rk-champ-stats">${escapeText(champ.record)} · ${champ.score.toFixed(2)}</span>` : ''}</p>
-          <div class="rk-champ-photo">${photo ? `<img src="${escapeText(photo)}" alt="${escapeText(champ.name)}" loading="eager" onerror="this.remove()">` : SILHOUETTE}</div>
+      const tag = champ ? 'a' : 'div';
+      const href = champ ? ` href="${profileLink(champ, 'C', division)}"` : '';
+      return `<${tag} class="pf-card${champ ? '' : ' is-vacant'}"${href}>
+          <div class="pf-card-division">${escapeText(division.name)}<span class="pf-card-weight">${escapeText(division.subtitle)}</span></div>
+          <div class="pf-card-watermark" aria-hidden="true">${escapeText(division.name.replace("Women's ", ''))}</div>
+          <div class="pf-card-img">${photo ? `<img src="${escapeText(photo)}" alt="${escapeText(champ.name)}" loading="lazy" onerror="this.remove()">` : SILHOUETTE}</div>
+          <div class="pf-card-info">
+            <div class="pf-card-meta">
+              <span class="pf-badge">${CROWN} Champion</span>
+              ${champ ? `<span class="pf-card-record">${escapeText(champ.record)}</span>` : ''}
+            </div>
+            <h3 class="pf-card-name${champ && champ.name.split(/\s+/).some(w => w.length > 9) ? ' is-long' : ''}">${champ ? escapeText(champ.name) : 'Vacant'}</h3>
+          </div>
+        </${tag}>`;
+    }
+
+    // White division box for the rankings grid: champion on top, then 1–10.
+    function divisionBox(division) {
+      const fighters = division.fighters;
+      const champ = championOf(division);
+      const contenders = (champ ? fighters.slice(1) : fighters).slice(0, TOP_SHOWN);
+      const photo = champ ? photoFor(champ) : null;
+      const top = `
+        <div class="pf-top${champ ? '' : ' is-vacant'}">
+          <div class="pf-top-badge">${CROWN} Champion</div>
+          <h4 class="pf-top-name">${champ ? `<a href="${profileLink(champ, 'C', division)}">${escapeText(champ.name)}</a>` : 'Vacant'}</h4>
+          <p class="pf-top-record">${champ ? `${escapeText(champ.record)} · score ${champ.score.toFixed(2)}` : ''}</p>
+          <div class="pf-top-img">${photo ? `<img src="${escapeText(photo)}" alt="${escapeText(champ.name)}" loading="lazy" onerror="this.remove()">` : SILHOUETTE}</div>
         </div>`;
-      let list;
-      if (!fighters.length) {
-        list = '<p class="rk-empty">No ranked professional fighters yet.</p>';
-      } else {
-        // The champion's own details sit at the top of the list as "C".
-        const rows = [];
-        if (champ) rows.push(fighterRow(champ, 'C', false, division));
-        ranked.forEach((f, i) => rows.push(fighterRow(f, i + 1, i >= TOP_SHOWN, division)));
-        const extra = Math.max(0, ranked.length - TOP_SHOWN);
-        list = `<ol class="rk-list">${rows.join('')}</ol>` +
-          (extra ? `<button type="button" class="rk-more" data-more="${extra}">Show all ${fighters.length}</button>` : '');
-      }
-      return `<article class="rk-division" data-division="${division.key}">${champHtml}${list}</article>`;
+      const list = contenders.length
+        ? `<ol class="pf-list">${contenders.map((f, i) => rankingLine(f, i + 1, division)).join('')}</ol>`
+        : `<p class="pf-empty">${fighters.length ? 'No ranked contenders yet.' : 'No ranked professional fighters yet.'}</p>`;
+      return `<article class="pf-box" data-division="${division.key}">
+          <div class="pf-box-title">
+            <button type="button" class="pf-toggle" aria-expanded="false">
+              <h3>${escapeText(division.name)}<span class="pf-box-weight">${escapeText(division.subtitle)}</span>${CHEVRON}</h3>
+            </button>
+          </div>
+          <div class="pf-box-body">${top}${list}</div>
+        </article>`;
     }
 
     let divisions = {};
 
     function render(d) {
       divisions = d;
-      // Keep expanded lists open across live refreshes.
-      const expanded = new Set([...document.querySelectorAll('.rk-division.expanded')].map(n => n.dataset.division));
-      document.getElementById('menGrid').innerHTML = MEN_DIVISIONS.map(m => divisionBlock(d[m.key])).join('');
-      document.getElementById('womenGrid').innerHTML = WOMEN_DIVISIONS.map(m => divisionBlock(d[m.key])).join('');
-      expanded.forEach(key => { const el = document.querySelector(`.rk-division[data-division="${key}"]`); if (el) expandDivision(el); });
+      // Keep opened divisions (mobile accordion) open across live refreshes.
+      const open = new Set([...document.querySelectorAll('.pf-box.open')].map(n => n.dataset.division));
+      document.getElementById('championsTrack').innerHTML = ALL_DIVISIONS.map(m => championCard(d[m.key])).join('');
+      document.getElementById('rankingsGrid').innerHTML = ALL_DIVISIONS.map(m => divisionBox(d[m.key])).join('');
+      open.forEach(key => {
+        const el = document.querySelector(`.pf-box[data-division="${key}"]`);
+        if (el) { el.classList.add('open'); el.querySelector('.pf-toggle').setAttribute('aria-expanded', 'true'); }
+      });
     }
 
-    function expandDivision(el) {
-      el.classList.add('expanded');
-      el.querySelectorAll('[data-extra]').forEach(r => { r.hidden = false; });
-      const more = el.querySelector('.rk-more');
-      if (more) more.remove();
-    }
+    // Mobile: tap a division title to open / close it (desktop shows every division).
     document.addEventListener('click', e => {
-      const more = e.target.closest('.rk-more');
-      if (more) expandDivision(more.closest('.rk-division'));
+      const btn = e.target.closest('.pf-toggle');
+      if (!btn || !window.matchMedia('(max-width: 767px)').matches) return;
+      const box = btn.closest('.pf-box');
+      const isOpen = box.classList.toggle('open');
+      btn.setAttribute('aria-expanded', String(isOpen));
     });
 
     // Live: finalized professional bouts and the current method weights from the WDS database.
