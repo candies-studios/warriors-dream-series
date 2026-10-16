@@ -1,0 +1,93 @@
+/* =====================================================================
+   Site footer — matched to the footer on warriorsdreamseries.com
+   (measured at 1440px). Link this file after style.css on any page.
+   ===================================================================== */
+
+.site-footer {
+  position: relative;
+  min-height: 0;
+  margin: 0;
+  padding: 100px 20px 80px;
+  border-top: 0;
+  background: url("https://warriorsdreamseries.com/wp-content/uploads/2026/09/1X4A6017-scaled.jpg") 50% 0% / cover no-repeat;
+  color: #121212;
+}
+.site-footer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #e5e5e5;
+  opacity: .8;
+  z-index: 0;
+}
+
+.site-footer .footer-content {
+  position: relative;
+  z-index: 1;
+  max-width: 1120px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.site-footer .footer-brand {
+  display: inline-block;
+  width: 224px;
+  margin: 10px 0 0;
+}
+.site-footer .footer-brand img { display: block; width: 224px; height: auto; }
+
+.site-footer .footer-nav {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 0;
+}
+.site-footer .footer-nav a {
+  padding: 15px 0 15px 15px;
+  font-family: "Teko", sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 30px;
+  letter-spacing: .25px;
+  text-transform: uppercase;
+  color: #121212;
+}
+.site-footer .footer-nav a:hover,
+.site-footer .footer-nav a.active { color: #d7272a; }
+
+.site-footer .footer-socials {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin: 20px 0 20px;
+}
+.site-footer .footer-socials a {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 10%;
+  background: #d7272a;
+  color: #fff;
+}
+.site-footer .footer-socials a:hover { background: #121212; }
+.site-footer .footer-socials svg { width: 25px; height: 25px; }
+
+.site-footer .footer-copy {
+  margin: 0;
+  font-family: "Teko", sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 30px;
+  letter-spacing: .25px;
+  text-align: center;
+  color: #121212;
+}
+
+@media (max-width: 767px) {
+  .site-footer { padding: 60px 16px 40px; }
+  .site-footer .footer-brand,
+  .site-footer .footer-brand img { width: 180px; }
+  .site-footer .footer-nav a { padding: 8px 8px; font-size: 17px; }
+}
