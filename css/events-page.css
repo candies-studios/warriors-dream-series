@@ -1,0 +1,322 @@
+/* =====================================================================
+   Events page — matched to warriorsdreamseries.com/event-page/
+   Values measured from the original at 1440px. Scoped to
+   <body class="page-events"> so other pages are untouched.
+   ===================================================================== */
+
+.page-events {
+  --wds-red: #d7272a;
+  --wds-ink: #121212;
+  font-family: "Roboto Condensed", sans-serif;
+}
+
+/* ---------- Header nav ---------- */
+.page-events .site-nav a {
+  font-family: "Teko", sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 30px;
+  letter-spacing: .25px;
+  text-transform: uppercase;
+  color: var(--wds-ink);
+}
+.page-events .site-nav a:hover,
+.page-events .site-nav a.active { color: var(--wds-red); }
+
+/* ---------- Hero ---------- */
+.page-events .events-hero {
+  position: relative;
+  min-height: clamp(300px, 40.6vw, 585px);
+  padding: clamp(40px, 8.3vw, 120px) 20px 0;   /* title sits a little below centre, like the original */
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-size: cover;
+  background-position: 50% 10%;
+  background-repeat: no-repeat;
+  background-attachment: scroll;
+}
+.page-events .events-hero .hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(0,0,0,.35) 0%, rgba(0,0,0,.75) 100%);
+  opacity: .75;
+  z-index: 1;
+}
+.page-events .events-hero .hero-inner {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0;
+  text-align: center;
+}
+.page-events .events-hero .hero-inner h1 {
+  margin: 0;
+  font-family: "Teko", sans-serif;
+  font-size: clamp(56px, 7.78vw, 112px);   /* 112px at 1440 */
+  font-weight: 700;
+  line-height: .9;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #e5e5e5;
+  text-shadow: 0 4px 20px rgba(0,0,0,.95), 0 10px 40px rgba(0,0,0,.9);
+}
+
+/* ---------- Upcoming bands (blue "Upcoming" | red event details) ---------- */
+.page-events .event-upcoming {
+  display: grid;
+  grid-template-columns: 32.1% 67.9%;      /* 462px | 978px at 1440 */
+  min-height: 444px;
+  background: #fff;
+}
+.page-events .eu-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 40px;
+  clip-path: none;
+  text-align: center;
+}
+.page-events .eu-left  { background: linear-gradient(135deg, #0066ff 0%, #00ccff 100%); }
+.page-events .eu-right { background: linear-gradient(135deg, #bc0000 0%, #ff1a1a 100%); }
+
+.page-events .eu-left h2,
+.page-events .eu-title {
+  margin: 0;
+  font-family: "Teko", sans-serif;
+  font-size: clamp(36px, 3.75vw, 54px);
+  font-weight: 700;
+  line-height: 58px;
+  letter-spacing: .25px;
+  text-transform: uppercase;
+  color: #fff;
+}
+.page-events .eu-title { margin-bottom: 20px; }
+
+.page-events .eu-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px 100px;
+  width: 100%;
+  margin: 0;
+}
+.page-events .eu-meta-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  text-align: left;
+}
+.page-events .eu-meta-item .eu-ico,
+.page-events .eu-meta-item svg {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  margin-top: 4px;
+  fill: #fff;
+  stroke: none;
+}
+.page-events .eu-label {
+  display: block;
+  font-family: "Teko", sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 26px;
+  letter-spacing: .25px;
+  text-transform: uppercase;
+  color: #fff;
+}
+.page-events .eu-value {
+  display: block;
+  font-family: "Roboto Condensed", sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 30px;
+  letter-spacing: .25px;
+  text-transform: none;
+  color: #fff;
+  opacity: 1;
+}
+.page-events .eu-cta {
+  margin-top: 28px;
+  border-radius: 0;
+  font-family: "Teko", sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: .5px;
+}
+
+/* ---------- Season schedule (past events) ---------- */
+.page-events .season-section {
+  padding: 100px 0 90px;
+  background-size: cover;
+  background-position: 0 0;
+  background-attachment: fixed;
+}
+.page-events .season-overlay { background: #000; opacity: .8; }
+.page-events .season-inner { max-width: 1120px; margin: 0 auto; padding: 0 40px; box-sizing: border-box; }
+.page-events .season-title {
+  display: block;
+  margin: 0 0 61px;
+  padding: 0;
+  font-family: "Teko", sans-serif;
+  font-size: clamp(38px, 3.75vw, 54px);
+  font-weight: 700;
+  line-height: 58px;
+  letter-spacing: .25px;
+  text-transform: uppercase;
+  text-align: left;
+  color: #fff;
+}
+.page-events .season-title::before { display: none; }
+
+.page-events .ev-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 327px));
+  justify-content: space-between;
+  gap: 30px 30px;
+}
+.page-events .ev-card {
+  display: flex;
+  flex-direction: column;
+  background: #0d0d0d;
+  border: 1px solid #1a1a1a;
+  border-radius: 4px;
+  overflow: hidden;
+  transition: border-color .2s ease, transform .2s ease;
+}
+.page-events .ev-card:hover { border-color: var(--wds-red); transform: translateY(-4px); }
+
+.page-events .ev-poster {
+  position: relative;
+  height: 203px;
+  aspect-ratio: auto;
+  background: #000;
+  overflow: hidden;
+}
+.page-events .ev-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: 50% 50%;
+  transform: none;
+}
+.page-events .ev-card:hover .ev-poster img { transform: none; }
+.page-events .ev-status {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  top: auto;
+  right: auto;
+  padding: 5px 10px;
+  border-radius: 0;
+  background: #333;
+  color: #aaa;
+  font-family: "Teko", sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 30px;
+  letter-spacing: .25px;
+  text-transform: uppercase;
+}
+
+.page-events .ev-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 30px 25px;
+}
+.page-events .ev-tag {
+  display: block;
+  margin: 0 0 8px;
+  font-family: "Teko", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 30px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #bc0000;
+}
+.page-events .ev-title {
+  margin: 0 0 8px;
+  font-family: "Teko", sans-serif;
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 54px;
+  letter-spacing: .25px;
+  text-transform: uppercase;
+  color: #fff;
+}
+.page-events .ev-meta {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  font-family: "Teko", sans-serif;
+  letter-spacing: .25px;
+}
+.page-events .ev-venue {
+  min-height: 34px;
+  margin-bottom: 15px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16.8px;
+  text-transform: uppercase;
+  color: #aaa;
+}
+.page-events .ev-date {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #222;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 30px;
+  text-transform: none;
+  color: #eee;
+}
+.page-events .ev-ico { width: 12px; height: 12px; margin-top: 2px; fill: #bc0000; }
+.page-events .ev-date .ev-ico { width: 13px; height: 13px; margin-top: 8px; fill: #eee; }
+
+.page-events .ev-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: auto;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid #333;
+  border-radius: 2px;
+  background: #1a1a1a;
+  color: #888;
+  font-family: "Teko", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 30px;
+  letter-spacing: .25px;
+  text-transform: uppercase;
+}
+.page-events .ev-btn:hover { background: var(--wds-red); border-color: var(--wds-red); color: #fff; }
+.page-events .ev-btn-ico { width: 14px; height: 14px; margin-top: -2px; fill: currentColor; }
+
+/* ---------- Tablet / mobile ---------- */
+@media (max-width: 1100px) {
+  .page-events .ev-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .page-events .season-section { background-attachment: scroll; }
+}
+@media (max-width: 860px) {
+  .page-events .event-upcoming { grid-template-columns: 1fr; min-height: 0; }
+  .page-events .eu-panel { padding: 40px 20px; }
+  .page-events .eu-meta { flex-direction: column; align-items: center; gap: 18px; }
+  .page-events .eu-meta-item { width: min(100%, 280px); }
+}
+@media (max-width: 640px) {
+  .page-events .season-inner { padding: 0 16px; }
+  .page-events .ev-grid { grid-template-columns: 1fr; }
+  .page-events .season-title { line-height: 1.1; margin-bottom: 32px; }
+}
