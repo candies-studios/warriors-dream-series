@@ -1870,20 +1870,32 @@ a.results-btn:hover { background: var(--red); border-color: var(--red); color: #
 /* ==========================================================================
    Header "Warrior Community" button (same on every page)
    ========================================================================== */
+.header-cta,
 button.header-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   border: 0;
+  border-radius: 0;                 /* square red button, like warriorsdreamseries.com */
+  background: #d7272a;
+  color: #fff;
   cursor: pointer;
   font-family: 'Teko', 'Oswald', sans-serif;
-  font-size: 1.3rem;
+  font-size: 18px;
   font-weight: 600;
-  letter-spacing: 1.2px;
+  letter-spacing: .5px;
   line-height: 1;
-  padding: 15px 28px 13px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding: 15px 20px;
 }
-.header-cta .cta-icon { width: 20px; height: 20px; flex-shrink: 0; margin-top: -2px; color: #fff; }
+.header-cta:hover { background: #a8181b; }
+.header-cta .cta-label { order: 1; padding-top: 2px; }
+.header-cta .cta-icon  { order: 2; width: 20px; height: 20px; flex-shrink: 0; color: #fff; }
 .header-cta:focus-visible { outline: 3px solid #111; outline-offset: 3px; }
 @media (max-width: 860px) {
-  button.header-cta { padding: 12px; }
+  .header-cta,
+  button.header-cta { padding: 12px; border-radius: 0; }
 }
 
 /* ==========================================================================

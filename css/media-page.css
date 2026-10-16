@@ -24,20 +24,6 @@
 }
 .page-media .site-nav a:hover,
 .page-media .site-nav a.active { color: var(--wds-red-2); }
-.page-media .header-cta {
-  font-family: "Teko", sans-serif;
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: .5px;
-  line-height: 1;
-  text-transform: uppercase;
-  padding: 15px 20px;
-  border-radius: 0;
-  background: var(--wds-red-2);
-  gap: 10px;
-}
-.page-media .header-cta .cta-label { order: 1; padding-top: 2px; }
-.page-media .header-cta .cta-icon  { order: 2; width: 20px; height: 20px; }
 
 /* ---------- Hero ---------- */
 .page-media .war-room-hero {

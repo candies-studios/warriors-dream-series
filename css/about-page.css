@@ -1,0 +1,215 @@
+/* =====================================================================
+   About page — typography + hero matched to warriorsdreamseries.com/about-us/
+   Values measured from the original at 1440px (desktop) and 555px (mobile).
+   Scoped to <body class="page-about"> so other pages are untouched.
+   ===================================================================== */
+
+.page-about {
+  --wds-red: #d7272a;
+  --wds-ink: #121212;
+  font-family: "Roboto Condensed", sans-serif;
+}
+
+/* ---------- Header: nav + CTA (Teko) ---------- */
+.page-about .site-nav a {
+  font-family: "Teko", sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 30px;
+  letter-spacing: .25px;
+  text-transform: uppercase;
+  color: var(--wds-ink);
+}
+.page-about .site-nav a:hover,
+.page-about .site-nav a.active { color: var(--wds-red); }
+
+
+/* ---------- Hero ---------- */
+.page-about .about-hero {
+  position: relative;
+  min-height: clamp(364px, 40.6vw, 585px);
+  padding: 40px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-size: cover;
+  background-position: 50% 25%;
+  background-repeat: no-repeat;
+  background-attachment: scroll;
+  text-align: center;
+}
+.page-about .about-hero .hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(0,0,0,.4) 0%, rgba(0,0,0,.8) 100%);
+  opacity: .75;
+  z-index: 1;
+}
+.page-about .about-hero .hero-inner {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0;
+}
+.page-about .about-hero .hero-inner h1 {
+  margin: 0;
+  font-family: "Teko", sans-serif;
+  font-size: clamp(26.4px, 5.333vw, 76.8px);   /* 76.8px at 1440 */
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  text-align: center;
+  color: #e5e5e5;
+  text-shadow: 0 4px 20px rgba(0,0,0,.95), 0 10px 40px rgba(0,0,0,.9);
+}
+.page-about .about-hero .hero-sub {
+  display: inline;
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+}
+
+/* ---------- Section headings (About Us / Our Mission / Our Story / Team) ---------- */
+.page-about .band { padding: 70px 0; }
+/* Team heading sits close to the first member */
+.page-about .band.team-head-band { padding-bottom: 0; }
+.page-about .team-head-band .band-title { margin-bottom: 0; }
+.page-about .band-inner,
+.page-about .team-head-band .container {
+  max-width: 1006px;
+  margin: 0 auto;
+  text-align: center;
+}
+.page-about .band-title {
+  position: relative;
+  display: inline-block;
+  margin: 0 0 20px;
+  padding: 0;
+  font-family: "Teko", sans-serif;
+  font-size: 54px;
+  font-weight: 700;
+  line-height: 58px;
+  letter-spacing: .25px;
+  text-transform: uppercase;
+  z-index: 0;
+}
+/* red square sitting behind the first letters, like the original */
+.page-about .band-title::before {
+  content: "";
+  position: absolute;
+  left: -18px;
+  top: 7px;
+  transform: none;
+  width: 33px;
+  height: 33px;
+  background: var(--wds-red);
+  z-index: -1;
+}
+.page-about .band-light .band-title { color: var(--wds-ink); }
+.page-about .band-dark  .band-title,
+.page-about .band-black .band-title { color: #fff; }
+
+/* ---------- Body copy ---------- */
+.page-about .band-inner p {
+  margin: 0 0 14.4px;
+  font-family: "Roboto Condensed", sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 30px;
+  letter-spacing: .25px;
+  text-align: justify;
+}
+.page-about .band-inner p:last-child { margin-bottom: 0; }
+.page-about .band-light .band-inner p { color: var(--wds-ink); }
+.page-about .band-dark  .band-inner p,
+.page-about .band-black .band-inner p { color: #fff; }
+.page-about .story-close { text-align: left !important; font-weight: 400; }
+
+/* ---------- Team (measured from the original at 1440px) ---------- */
+.page-about .team-title::before { display: block; }
+.page-about .team-row { padding: 50px 0; }
+.page-about .team-rows > .team-row:first-child { padding-top: 24px; }
+.page-about .team-row-inner,
+.page-about .team-row.reverse .team-row-inner {
+  display: grid;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding-left: 0;
+  padding-right: 0;
+  gap: 60px;
+  align-items: center;
+  justify-content: center;
+}
+.page-about .team-row-inner { grid-template-columns: 322px minmax(0, 698px); }
+.page-about .team-row.reverse .team-row-inner { grid-template-columns: minmax(0, 698px) 322px; }
+.page-about .team-photo { width: 322px; height: 400px; }
+
+/* bio first, then name, then role — like the original */
+.page-about .team-info,
+.page-about .team-row.reverse .team-info {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+.page-about .team-info p {
+  order: 1;
+  margin: 0 0 14.4px;
+  max-width: none;
+  font-family: "Roboto Condensed", sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 30px;
+  letter-spacing: .25px;
+  text-align: left;
+}
+.page-about .team-info h3 {
+  order: 2;
+  margin: 5px 0 0;
+  font-family: "Teko", sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 28px;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: var(--wds-red);
+}
+.page-about .team-role,
+.page-about .team-org {
+  order: 3;
+  font-family: "Roboto Condensed", sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 28px;
+  letter-spacing: .25px;
+  text-transform: uppercase;
+}
+.page-about .band-light .team-role, .page-about .band-light .team-org,
+.page-about .band-light .team-info p { color: var(--wds-ink); }
+.page-about .band-black .team-role, .page-about .band-black .team-org,
+.page-about .band-black .team-info p { color: #fff; }
+
+/* ---------- Tablet / mobile ---------- */
+@media (max-width: 1024px) {
+  .page-about .band-title { font-size: 42px; line-height: 46px; }
+  .page-about .band-title::before { width: 26px; height: 26px; left: -14px; top: 6px; }
+}
+@media (max-width: 767px) {
+  .page-about .about-hero { background-position: 50% 20%; padding: 40px 16px; }
+  .page-about .about-hero .hero-inner h1 { line-height: 1.25; letter-spacing: 1px; }
+  .page-about .band { padding: 46px 0; }
+  .page-about .band-inner, .page-about .team-head-band .container { padding: 0 20px; }
+  .page-about .band-title { font-size: 25px; line-height: 30px; }
+  .page-about .band-title::before { width: 16px; height: 16px; left: -9px; top: 4px; }
+  .page-about .band-inner p { font-size: 16px; line-height: 27px; }
+  .page-about .team-row-inner,
+  .page-about .team-row.reverse .team-row-inner { grid-template-columns: 1fr; gap: 24px; padding: 0 20px; }
+  .page-about .team-row.reverse .team-photo { order: 0; }
+  .page-about .team-photo { width: 100%; max-width: 322px; margin: 0 auto; }
+  .page-about .team-info p { font-size: 16px; line-height: 27px; }
+}
