@@ -42,10 +42,12 @@
 /* ---------- Hero ---------- */
 .page-media .war-room-hero {
   display: flex;
-  align-items: center;
+  align-items: flex-start;            /* text sits in the upper part, like the original */
   justify-content: center;
-  min-height: clamp(340px, 36vw, 525px);
-  padding: 60px 20px;
+  box-sizing: border-box;
+  min-height: clamp(340px, 36vw, 520px);
+  padding: clamp(70px, 8.8vw, 127px) 20px 60px;
+  border-bottom: 4px solid var(--wds-red);   /* red separator under the hero */
   background-color: #000;
   background-position: 0 0, 50% 50%;
   background-size: auto, cover;
@@ -95,9 +97,10 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 0 0 44px;
-  padding: 0;
+  margin: 0 0 30px;
+  padding: 0 0 12px;
   border: 0;
+  border-bottom: 2px solid #222;      /* divider under the section title */
   font-family: "Teko", sans-serif;
   font-size: 28.8px;
   font-weight: 700;
@@ -106,7 +109,7 @@
   text-transform: uppercase;
   color: #fff;
 }
-.page-media .media-col-title .col-icon { width: 26px; height: 26px; color: var(--wds-red); flex: none; }
+.page-media .media-col-title .col-icon { width: 29px; height: 29px; color: var(--wds-red); flex: none; }
 
 /* ---------- Fight-night tags ---------- */
 .page-media .content-category { margin: 0 0 50px; }
@@ -236,4 +239,5 @@
   .page-media .category-tag { font-size: 32px; line-height: 38px; }
   .page-media .video-grid { grid-template-columns: 1fr; }
   .page-media .media-col-title { margin-bottom: 24px; }
+  .page-media .war-room-hero { min-height: 300px; padding-bottom: 50px; }
 }
