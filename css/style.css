@@ -2049,3 +2049,18 @@ body.community-open { overflow: hidden; }
 .wds-ue-link { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 10px 22px; background: #e0181d; color: #fff; font-family: 'Oswald', sans-serif; font-weight: 600; font-size: .8rem; letter-spacing: .18em; text-transform: uppercase; transition: background .2s; }
 .wds-ue-link span { font-size: 1.2rem; line-height: .5; }
 .wds-ue-link:hover { background: #a8181b; color: #fff; }
+
+/* ==========================================================================
+   Header menu — same font and size on every page (matches the Contact page)
+   ========================================================================== */
+.site-nav a {
+  font-family: "Teko", sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 30px;
+  letter-spacing: .25px;
+  text-transform: uppercase;
+  color: #121212;
+}
+.site-nav a:hover,
+.site-nav a.active { color: #d7272a; border-color: #d7272a; }

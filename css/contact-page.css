@@ -10,18 +10,6 @@
   font-family: "Roboto Condensed", sans-serif;
 }
 
-/* ---------- Header: nav + CTA ---------- */
-.page-contact .site-nav a {
-  font-family: "Teko", sans-serif;
-  font-size: 20px;
-  font-weight: 600;
-  line-height: 30px;
-  letter-spacing: .25px;
-  text-transform: uppercase;
-  color: var(--wds-ink);
-}
-.page-contact .site-nav a:hover,
-.page-contact .site-nav a.active { color: var(--wds-red); }
 
 
 /* ---------- Hero ---------- */
