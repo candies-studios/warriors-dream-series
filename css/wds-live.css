@@ -158,3 +158,41 @@ a.eu-cta:hover { background: var(--red, #d7272a); color: #fff; }
   transition: background .2s ease, border-color .2s ease;
 }
 .wds-more-btn:hover, .wds-more-btn:focus-visible { background: var(--red, #d7272a); border-color: var(--red, #d7272a); outline: none; }
+
+/* "Coming Soon" badge — takes the place of "View Fight Card" on upcoming
+   events. Same shape and type as the button it replaces, but not clickable. */
+.wds-ue-link.is-soon,
+.wds-card-link.is-soon,
+.eu-cta.is-soon { cursor: default; pointer-events: none; }
+.wds-ue-link.is-soon:hover,
+.wds-card-link.is-soon:hover { background: #e0181d; color: #fff; }
+.eu-cta.is-soon:hover { background: #fff; color: #c00101; }
+
+/* Events page: separator between upcoming event bands. A white seam the same
+   width as the diagonal gap between the blue and red panels, with an angled
+   red bar in the middle to match the slanted panel edges. */
+.eu-live + .eu-live {
+  --eu-sep: clamp(18px, 2vw, 28px);
+  border-top: var(--eu-sep) solid #fff;
+  position: relative;
+  overflow: visible;
+}
+.eu-live + .eu-live::before {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  top: calc(var(--eu-sep) / -2 - 3px);
+  left: 66.5%; /* centre of the red panel */
+  width: clamp(90px, 10vw, 150px);
+  height: 6px;
+  background: #e0181d;
+  transform: translateX(-50%) skewX(-30deg);
+}
+@media (max-width: 900px) {
+  .eu-live + .eu-live::before { left: 50%; }
+}
+
+/* Fight Night 19 page: fight card not announced yet */
+.fn19-soon { text-align: center; padding: clamp(40px, 6vw, 80px) 20px; }
+.fn19-soon .eu-cta { background: #e0181d; color: #fff; cursor: default; }
+.fn19-soon p { margin: 22px auto 0; max-width: 520px; color: inherit; opacity: .8; }

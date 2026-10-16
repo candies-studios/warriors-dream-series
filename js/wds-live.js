@@ -119,6 +119,20 @@
     return a;
   }
 
+  // Upcoming events with a fight card show a plain "Coming Soon" badge
+  // instead of linking to the bouts. Live and finished events keep their links.
+  function comingSoon(ev, counts) {
+    return hasCard(ev, counts) && ev.status !== 'live' && ev.status !== 'completed' && ev.status !== 'cancelled';
+  }
+  function soonBadge(existing, className) {
+    var span = existing && existing.tagName === 'SPAN' ? existing : document.createElement('span');
+    span.className = className + ' is-soon';
+    span.textContent = 'Coming Soon';
+    span.removeAttribute('href');
+    if (existing && existing !== span) existing.replaceWith(span);
+    return span;
+  }
+
   function fillHomeUpcoming(card, ev, counts) {
     var badge = card.querySelector('.status-badge');
     if (badge) setLeadText(badge, ev.status === 'live' ? 'Live Now' : ev.status === 'completed' ? 'Event Ended' : 'Upcoming');
@@ -132,7 +146,10 @@
     setText(details[1], W.formatTime(ev) || 'TBA');
     setText(details[2], W.formatVenue(ev) || 'To Be Announced');
     var link = card.querySelector('.wds-card-link');
-    if (hasCard(ev, counts) || ev.status === 'live') {
+    if (comingSoon(ev, counts)) {
+      if (!link) { link = document.createElement('span'); card.appendChild(link); }
+      soonBadge(link, 'wds-card-link');
+    } else if (hasCard(ev, counts) || ev.status === 'live') {
       if (!link) { link = document.createElement('a'); card.appendChild(link); }
       linkButton(link, eventUrl(ev), ev.status === 'live' ? 'Live Fight Card' : ev.status === 'completed' ? 'View Results' : 'View Fight Card', 'wds-card-link');
     } else if (link) {
@@ -158,7 +175,9 @@
       right.appendChild(cta);
     }
     if (opts && opts.cta) { opts.cta(cta); return; }
-    if (hasCard(ev, counts) || ev.status === 'live') {
+    if (comingSoon(ev, counts)) {
+      soonBadge(cta, 'eu-cta');
+    } else if (hasCard(ev, counts) || ev.status === 'live') {
       linkButton(cta, eventUrl(ev), ev.status === 'live' ? 'Live Fight Card' : ev.status === 'completed' ? 'View Results' : 'View Fight Card', 'eu-cta');
     } else if (section.classList.contains('eu-live')) {
       cta.remove();
@@ -226,7 +245,8 @@
   // Home: <div class="wds-ue-list"> of <article class="wds-ue-event">
   function fillUeEvent(article, ev, counts) {
     setText(article.querySelector('.wds-ue-series'), W.seriesLabel(ev.series, ev));
-    var linked = hasCard(ev, counts) || ev.status === 'live';
+    var soon = comingSoon(ev, counts);
+    var linked = !soon && (hasCard(ev, counts) || ev.status === 'live');
     var title = article.querySelector('.wds-ue-title');
     if (title) {
       if (linked) title.innerHTML = '<a href="' + esc(eventUrl(ev)) + '">' + esc(ev.title) + '</a>';
@@ -235,7 +255,10 @@
     var desc = article.querySelector('.wds-ue-desc');
     if (desc) { desc.textContent = ev.description || ''; desc.hidden = !ev.description; }
     var link = article.querySelector('.wds-ue-link');
-    if (linked) {
+    if (soon) {
+      if (!link) { link = document.createElement('span'); (article.querySelector('.wds-ue-info') || article).appendChild(link); }
+      soonBadge(link, 'wds-ue-link');
+    } else if (linked) {
       if (!link) {
         link = document.createElement('a');
         link.className = 'wds-ue-link';
