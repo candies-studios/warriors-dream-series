@@ -2064,3 +2064,13 @@ body.community-open { overflow: hidden; }
 }
 .site-nav a:hover,
 .site-nav a.active { color: #d7272a; border-color: #d7272a; }
+
+/* ==========================================================================
+   FEATURE SWITCH — Rankings
+   The Rankings page is kept but hidden from the menus.
+   To SHOW Rankings again: delete the rule below (the 3 lines starting
+   with [data-feature="rankings"]), then commit and push.
+   ========================================================================== */
+[data-feature="rankings"] {
+  display: none !important;
+}
