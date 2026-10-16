@@ -4,18 +4,28 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Events — Warriors Dream Series</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@400;500;600;700&family=Roboto+Condensed:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="../css/style.css">
 <link rel="stylesheet" href="../css/wds-live.css">
-<link rel="stylesheet" href="../css/events-page.css">
-<link rel="stylesheet" href="../css/footer.css">
-<link rel="icon" type="image/png" sizes="32x32" href="https://warriorsdreamseries.com/wp-content/uploads/2026/08/cropped-cropped_circle_image-5-32x32.png">
-<link rel="icon" type="image/png" sizes="192x192" href="https://warriorsdreamseries.com/wp-content/uploads/2026/08/cropped-cropped_circle_image-5-192x192.png">
-<link rel="apple-touch-icon" href="https://warriorsdreamseries.com/wp-content/uploads/2026/08/cropped-cropped_circle_image-5-180x180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/images/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="../assets/images/favicon-192x192.png">
+<link rel="apple-touch-icon" href="../assets/images/apple-touch-icon.png">
+<style>
+/* Upcoming event bands — matched to warriorsdreamseries.com/event-page */
+.eu-live .eu-left { align-items: center; text-align: center; }
+.eu-live .eu-left h2 { font-family: 'Teko', sans-serif; font-size: clamp(2.2rem, 3.4vw, 3rem); font-weight: 700; letter-spacing: .25px; text-transform: uppercase; line-height: 1.1; }
+.eu-live .eu-title { font-family: 'Teko', sans-serif; font-size: clamp(2rem, 3.4vw, 3rem); font-weight: 700; letter-spacing: .25px; text-transform: uppercase; line-height: 1.1; margin-bottom: clamp(24px, 3vw, 44px); }
+.eu-live .eu-meta { width: 100%; display: grid; grid-template-columns: 1fr .8fr 1.35fr; gap: clamp(18px, 2.5vw, 40px); justify-content: stretch; }
+.eu-live .eu-meta-item { align-items: flex-start; gap: clamp(12px, 1.4vw, 22px); }
+.eu-live .eu-meta-item .eu-ico { flex: none; width: 30px; height: 30px; fill: #fff; stroke: none; }
+.eu-live .eu-label { font-family: 'Teko', sans-serif; font-size: 1.15rem; font-weight: 600; letter-spacing: .25px; line-height: 1.6; }
+.eu-live .eu-value { font-family: 'Roboto Condensed', sans-serif; font-size: 1rem; font-weight: 400; letter-spacing: .25px; line-height: 1.75; opacity: 1; }
+@media (max-width: 900px) {
+  .eu-live .eu-meta { grid-template-columns: 1fr; justify-items: center; }
+  .eu-live .eu-meta-item { width: min(100%, 260px); }
+}
+</style>
 </head>
-<body class="page-events">
+<body>
 
 <header class="site-header">
   <div class="container header-inner">
@@ -58,10 +68,17 @@
   </div>
 </div>
 
-<section class="page-hero events-hero" style="background-image: url('https://warriorsdreamseries.com/wp-content/uploads/2026/09/DP10129-scaled.jpg');">
+<section class="page-hero events-hero" style="background-image: url('../assets/images/footer-fight.jpg');">
   <div class="hero-overlay"></div>
   <div class="container hero-inner">
     <h1>Events</h1>
+  </div>
+</section>
+
+<section class="season-section upcoming-heading-band" style="background-image: url('../assets/images/footer-fight.jpg'); padding: clamp(48px, 6vw, 84px) 0;">
+  <div class="season-overlay"></div>
+  <div class="container season-inner">
+    <h2 class="season-title" style="margin-bottom: 0;">WDS 2026 Season Schedule</h2>
   </div>
 </section>
 
@@ -110,14 +127,14 @@
     <span class="eu-cta is-soon">Coming Soon</span>
   </div>
 </section>
-<section class="season-section" style="background-image: url('https://warriorsdreamseries.com/wp-content/uploads/2026/09/DP3274-scaled.jpg');">
+<section class="season-section" style="background-image: url('../assets/images/footer-fight.jpg');">
   <div class="season-overlay"></div>
   <div class="container season-inner">
-    <h2 class="season-title">WDS 2026 Season Schedule</h2>
+    <h2 class="season-title">Past Events</h2>
     <div class="ev-grid">
       <article class="ev-card">
         <div class="ev-poster">
-          <img src="https://warriorsdreamseries.com/wp-content/uploads/2026/08/Fight-Night-18-1600x900-banner-1.png" alt="WDS Fight Night 18" loading="lazy">
+          <img src="../assets/images/fight-night-18-banner.jpg" alt="WDS Fight Night 18" loading="lazy">
           <span class="ev-status">Event Ended</span>
         </div>
         <div class="ev-body">
@@ -130,7 +147,7 @@
       </article>
       <article class="ev-card">
         <div class="ev-poster">
-          <img src="https://warriorsdreamseries.com/wp-content/uploads/2026/06/1-1.png" alt="WDS Rising Star 7" loading="lazy">
+          <img src="../assets/images/wds-rising-star-7.jpg" alt="WDS Rising Star 7" loading="lazy">
           <span class="ev-status">Event Ended</span>
         </div>
         <div class="ev-body">
@@ -143,7 +160,7 @@
       </article>
       <article class="ev-card">
         <div class="ev-poster">
-          <img src="https://warriorsdreamseries.com/wp-content/uploads/2026/05/2026-05-19-10.26.46.jpg" alt="WDS Fight Night 17" loading="lazy">
+          <img src="../assets/images/wds-fight-night-17.jpg" alt="WDS Fight Night 17" loading="lazy">
           <span class="ev-status">Event Ended</span>
         </div>
         <div class="ev-body">
@@ -156,7 +173,7 @@
       </article>
       <article class="ev-card">
         <div class="ev-poster">
-          <img src="https://warriorsdreamseries.com/wp-content/uploads/2026/02/1850.jpg" alt="WDS Rising Star 6" loading="lazy">
+          <img src="../assets/images/wds-rising-star-4.jpg" alt="WDS Rising Star 6" loading="lazy">
           <span class="ev-status">Event Ended</span>
         </div>
         <div class="ev-body">
@@ -169,7 +186,7 @@
       </article>
       <article class="ev-card">
         <div class="ev-poster">
-          <img src="https://warriorsdreamseries.com/wp-content/uploads/2026/02/WDS-16-website-banner.jpg" alt="WDS Fight Night 16" loading="lazy">
+          <img src="../assets/images/WDS-16-website-banner.jpg" alt="WDS Fight Night 16" loading="lazy">
           <span class="ev-status">Event Ended</span>
         </div>
         <div class="ev-body">
@@ -187,7 +204,7 @@
 <footer class="site-footer">
   <div class="footer-content">
     <a class="footer-brand" href="../">
-      <img src="https://warriorsdreamseries.com/wp-content/uploads/2026/02/logo-new-e1786397673244.png" alt="Warriors Dream Series" width="224" height="89">
+      <img src="../assets/images/footer-logo.png" alt="Warriors Dream Series">
     </a>
 
     <nav class="footer-nav" aria-label="Footer navigation">
