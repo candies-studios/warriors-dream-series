@@ -25,6 +25,7 @@
   }
   function asset(url) {
     if (!url) return BASE + 'assets/images/footer-fight.jpg';
+    url = String(url).replace(/^http:\/\//i, 'https://');
     return /^(https?:|data:|\/)/.test(url) ? url : BASE + url;
   }
   function eventUrl(ev) {
