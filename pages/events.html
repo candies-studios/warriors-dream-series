@@ -11,6 +11,14 @@
 <link rel="icon" type="image/png" sizes="192x192" href="../assets/images/favicon-192x192.png">
 <link rel="apple-touch-icon" href="../assets/images/apple-touch-icon.png">
 <style>
+/* Hero: same height + red separator as the Media Room hero */
+body .events-hero {
+  padding: 20px 0;
+  min-height: clamp(260px, 25vw, 360px);   /* same height as the Media Room hero */
+  box-sizing: border-box;
+  border-bottom: 4px solid #d20a0a;         /* red separator under the hero, same as Media Room */
+}
+@media (max-width: 767px) { body .events-hero { min-height: 240px; } }
 /* Upcoming event bands — matched to warriorsdreamseries.com/event-page */
 .eu-live .eu-left { align-items: center; text-align: center; }
 .eu-live .eu-left h2 { font-family: 'Teko', sans-serif; font-size: clamp(2.2rem, 3.4vw, 3rem); font-weight: 700; letter-spacing: .25px; text-transform: uppercase; line-height: 1.1; }

@@ -15,8 +15,10 @@
 /* ---------- Hero ---------- */
 .page-about .about-hero {
   position: relative;
-  min-height: clamp(364px, 40.6vw, 585px);
-  padding: 40px 20px;
+  padding: 20px 20px;
+  min-height: clamp(260px, 25vw, 360px);   /* same height as the Media Room hero */
+  box-sizing: border-box;
+  border-bottom: 4px solid #d20a0a;         /* red separator under the hero, same as Media Room */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -188,7 +190,7 @@
   .page-about .band-title::before { width: 26px; height: 26px; left: -14px; top: 6px; }
 }
 @media (max-width: 767px) {
-  .page-about .about-hero { background-position: 50% 20%; padding: 40px 16px; }
+  .page-about .about-hero { background-position: 50% 20%; padding: 20px 16px; min-height: 240px; }
   .page-about .about-hero .hero-inner h1 { line-height: 1.25; letter-spacing: 1px; }
   .page-about .band { padding: 46px 0; }
   .page-about .band-inner, .page-about .team-head-band .container { padding: 0 20px; }

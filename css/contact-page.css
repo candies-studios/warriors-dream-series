@@ -15,8 +15,10 @@
 /* ---------- Hero ---------- */
 .page-contact .contact-hero {
   position: relative;
-  min-height: clamp(300px, 40.6vw, 585px);
   padding: 0 20px;
+  min-height: clamp(260px, 25vw, 360px);   /* same height as the Media Room hero */
+  box-sizing: border-box;
+  border-bottom: 4px solid #d20a0a;         /* red separator under the hero, same as Media Room */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -182,6 +184,7 @@
   .page-contact .contact-panel { background-attachment: scroll; }
 }
 @media (max-width: 767px) {
+  .page-contact .contact-hero { min-height: 240px; }
   .page-contact .contact-panel { padding: 60px 0; }
   .page-contact .contact-panel-inner { grid-template-columns: 1fr; padding: 0 16px; }
   .page-contact .contact-details h2 { font-size: 32px; line-height: 40px; }
