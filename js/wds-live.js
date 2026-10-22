@@ -28,7 +28,14 @@
     url = String(url).replace(/^http:\/\//i, 'https://');
     return /^(https?:|data:|\/)/.test(url) ? url : BASE + url;
   }
+  // Custom fight card pages that live in this repo, used when the database has no page_url yet.
+  var CARD_PAGES = {
+    'wds-rising-star-8': 'pages/wds-rising-star-8.html',
+    'wds-fight-night-19': 'pages/wds-fight-night-19.html'
+  };
+  function cardPage(ev) { return ev.page_url || CARD_PAGES[ev.slug] || ''; }
   function eventUrl(ev) {
+    if (!ev.page_url && CARD_PAGES[ev.slug]) return BASE + CARD_PAGES[ev.slug];
     if (ev.page_url) return /^(https?:|\/)/.test(ev.page_url) ? ev.page_url : BASE + ev.page_url;
     return BASE + 'pages/event.html?e=' + encodeURIComponent(ev.slug);
   }
@@ -41,7 +48,7 @@
     if (node) node.textContent = node.textContent.replace(/\S(?:[\s\S]*\S)?/, value);
     else el.insertBefore(document.createTextNode(value + ' '), el.firstChild);
   }
-  function hasCard(ev, counts) { return (counts[ev.id] || 0) > 0 || !!ev.page_url; }
+  function hasCard(ev, counts) { return (counts[ev.id] || 0) > 0 || !!cardPage(ev); }
 
   // ---------------------------------------------------------------- cards
   function fillCard(card, ev, counts) {
@@ -120,10 +127,10 @@
     return a;
   }
 
-  // Upcoming events with a fight card show a plain "Coming Soon" badge
-  // instead of linking to the bouts. Live and finished events keep their links.
+  // Upcoming events with a fight card link straight to the bouts ("View Fight Card").
+  // The "Coming Soon" badge is no longer used for events that have a card.
   function comingSoon(ev, counts) {
-    return hasCard(ev, counts) && ev.status !== 'live' && ev.status !== 'completed' && ev.status !== 'cancelled';
+    return false;
   }
   function soonBadge(existing, className) {
     var span = existing && existing.tagName === 'SPAN' ? existing : document.createElement('span');
