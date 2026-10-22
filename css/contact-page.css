@@ -23,7 +23,7 @@
   align-items: center;
   justify-content: center;
   background-size: cover;
-  background-position: 50% 25%;
+  background-position: 50% 0%;    /* keeps both faces and the kick in view */
   background-repeat: no-repeat;
   background-attachment: scroll;
 }
