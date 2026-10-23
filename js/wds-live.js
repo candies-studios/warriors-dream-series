@@ -129,8 +129,12 @@
 
   // Upcoming events with a fight card link straight to the bouts ("View Fight Card").
   // The "Coming Soon" badge is no longer used for events that have a card.
+  // Events listed here show a "Coming Soon" badge instead of "View Fight Card"
+  // while they are upcoming. Remove a slug to show its fight card button again.
+  var SOON_SLUGS = ['wds-fight-night-19'];
   function comingSoon(ev, counts) {
-    return false;
+    return SOON_SLUGS.indexOf(ev.slug) !== -1 &&
+      ev.status !== 'live' && ev.status !== 'completed' && ev.status !== 'cancelled';
   }
   function soonBadge(existing, className) {
     var span = existing && existing.tagName === 'SPAN' ? existing : document.createElement('span');
