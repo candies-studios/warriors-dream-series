@@ -35,6 +35,8 @@
   };
   function cardPage(ev) { return ev.page_url || CARD_PAGES[ev.slug] || ''; }
   function eventUrl(ev) {
+    // Finished events open the results page (winners, methods, ranking points).
+    if (ev.status === 'completed' && !ev.results_url) return BASE + 'pages/event.html?e=' + encodeURIComponent(ev.slug);
     if (!ev.page_url && CARD_PAGES[ev.slug]) return BASE + CARD_PAGES[ev.slug];
     if (ev.page_url) return /^(https?:|\/)/.test(ev.page_url) ? ev.page_url : BASE + ev.page_url;
     return BASE + 'pages/event.html?e=' + encodeURIComponent(ev.slug);
@@ -222,9 +224,18 @@
       : b.status === 'CANCELLED' ? 'Cancelled' : (eventStatus === 'completed' ? 'Result pending' : 'Scheduled');
     var tags = ['Bout ' + b.bout_number, b.weight_class || b.bout_name, (b.bout_type === 'AMATEUR' ? 'Amateur ' : 'Pro ') + (b.discipline || 'MMA')]
       .filter(Boolean).join(' · ');
+    // Fighter photos: shown when at least one fighter in the bout has one.
+    var withPhotos = !!(b.blue_photo_url || b.red_photo_url);
+    function photo(url, name) {
+      if (!withPhotos) return '';
+      return url
+        ? '<span class="wds-photo"><img src="' + esc(asset(url)) + '" alt="' + esc(name || '') + '" loading="lazy"></span>'
+        : '<span class="wds-photo"><img class="is-placeholder" src="' + BASE + 'assets/images/fight-night-19/placeholder-fighter.svg" alt="" loading="lazy"></span>';
+    }
     function corner(side, name, nick, id) {
       var winner = res && b.winner_id && b.winner_id === id;
       return '<div class="wds-corner wds-' + side + (winner ? ' is-winner' : '') + (res && b.winner_id && !winner ? ' is-loser' : '') + '">' +
+        photo(side === 'blue' ? b.blue_photo_url : b.red_photo_url, name) +
         '<span class="wds-corner-label">' + (side === 'blue' ? 'Blue corner' : 'Red corner') + (winner ? ' · Winner' : '') + '</span>' +
         '<span class="wds-name">' + esc(name || 'To be announced') + '</span>' +
         (nick ? '<span class="wds-nick">“' + esc(nick) + '”</span>' : '') +

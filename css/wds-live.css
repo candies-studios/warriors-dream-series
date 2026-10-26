@@ -105,7 +105,18 @@ a.eu-cta:hover { background: var(--red, #d7272a); color: #fff; }
   font-size: 1rem;
 }
 
+/* Fighter photos on the results / fight card page */
+.wds-photo { display: flex; align-items: flex-end; height: 220px; margin-bottom: 10px; }
+.wds-red .wds-photo { justify-content: flex-end; }
+.wds-photo img { display: block; height: 220px; width: auto; max-width: 100%; object-fit: contain;
+  filter: drop-shadow(0 12px 18px rgba(0,0,0,.6)); }
+.wds-photo img.is-placeholder { height: 170px; opacity: .85; }
+.wds-corner.is-loser .wds-photo img { opacity: .45; filter: grayscale(1); }
+
 @media (max-width: 600px) {
+  .wds-photo, .wds-photo img { height: 170px; }
+  .wds-photo img.is-placeholder { height: 130px; }
+  .wds-red .wds-photo { justify-content: flex-start; }
   .wds-bout { padding: 18px 16px 20px; }
   .wds-bout-head { flex-direction: column; align-items: flex-start; }
   .wds-bout-body { grid-template-columns: 1fr; gap: 10px; }
