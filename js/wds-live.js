@@ -204,13 +204,16 @@
   }
 
   // ---------------------------------------------------------------- fight card
-  function pointsBlock(p) {
+  // Events whose ranking scores are not published yet: show how the fight
+  // ended and the record, but not the method points / score line.
+  var HIDE_SCORE_EVENTS = ['a293d38a-90e8-4d3a-8a36-bbe352c62f62']; // WDS Rising Star 8
+  function pointsBlock(p, hideScore) {
     if (!p) return '';
     return '<span class="wds-points">' +
       '<span class="wds-points-how">' + esc(W.outcomeText(p)) + '</span>' +
-      '<span class="wds-points-line">Method pts <strong>' + (p.outcome === 'W' ? '+' : '') + W.num(p.method_weight).toFixed(2) + '</strong>' +
+      (hideScore ? '' : '<span class="wds-points-line">Method pts <strong>' + (p.outcome === 'W' ? '+' : '') + W.num(p.method_weight).toFixed(2) + '</strong>' +
       ' · Score <strong>' + W.num(p.score_after).toFixed(2) + '</strong> <em class="' +
-      (W.num(p.score_change) < 0 ? 'is-down' : W.num(p.score_change) > 0 ? 'is-up' : '') + '">(' + W.signed(p.score_change) + ')</em></span>' +
+      (W.num(p.score_change) < 0 ? 'is-down' : W.num(p.score_change) > 0 ? 'is-up' : '') + '">(' + W.signed(p.score_change) + ')</em></span>') +
       '<span class="wds-points-line">Record ' + p.wins_after + '-' + p.losses_after + (p.draws_after ? '-' + p.draws_after : '') + '</span>' +
       '</span>';
   }
@@ -239,7 +242,7 @@
         '<span class="wds-corner-label">' + (side === 'blue' ? 'Blue corner' : 'Red corner') + (winner ? ' · Winner' : '') + '</span>' +
         '<span class="wds-name">' + esc(name || 'To be announced') + '</span>' +
         (nick ? '<span class="wds-nick">“' + esc(nick) + '”</span>' : '') +
-        (res ? pointsBlock(points[b.id + ':' + id]) : '') + '</div>';
+        (res ? pointsBlock(points[b.id + ':' + id], HIDE_SCORE_EVENTS.indexOf(b.event_id) !== -1) : '') + '</div>';
     }
     return '<article class="wds-bout' + (b.status === 'LIVE' ? ' is-live' : '') + (res ? ' is-final' : '') + '">' +
       '<div class="wds-bout-head"><span class="ev-tag">' + esc(tags) + '</span><span class="wds-bout-state">' + esc(state) + '</span></div>' +
