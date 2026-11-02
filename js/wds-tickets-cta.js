@@ -5,7 +5,7 @@
  * watches the page and re-adds buttons after every render. Buttons appear only
  * for events whose ticket sales are switched on in the ticketing admin, next to
  * links that point at that event's page (Home card, Events page, fight card
- * page), plus a "Tickets" item in the main navigation.
+ * page),
  *
  * Include before </body>:  <script src="js/wds-tickets-cta.js"></script>
  */
@@ -30,8 +30,7 @@
       '.wds-buy-tickets:hover{background:#d7272a;color:#fff!important}' +
       '.wds-buy-tickets svg{width:15px;height:15px}' +
       '.wds-buy-tickets--hero{background:#d7272a;color:#fff!important;font-size:1rem;padding:14px 30px;margin:18px 0 6px;box-shadow:0 10px 26px -10px rgba(215,39,42,.9)}' +
-      '.wds-buy-tickets--hero:hover{background:#fff;color:#050505!important}' +
-      '.site-nav a.wds-nav-tickets{color:#d7272a}';
+      '.wds-buy-tickets--hero:hover{background:#fff;color:#050505!important}';
     document.head.appendChild(s);
   }
 
@@ -74,15 +73,6 @@
         target.insertAdjacentElement('afterend', button(ev, 'wds-buy-tickets--hero'));
       }
     });
-    // 3. Navigation item.
-    var ul = document.querySelector('.site-nav ul');
-    if (ul && !ul.querySelector('.wds-nav-tickets')) {
-      var li = document.createElement('li');
-      li.innerHTML = '<a class="wds-nav-tickets" href="' + ticketUrl(onsale[0]) + '">Tickets</a>';
-      var events = ul.querySelector('a[href*="events"]');
-      if (events && events.parentElement.nextSibling) ul.insertBefore(li, events.parentElement.nextSibling);
-      else ul.appendChild(li);
-    }
   }
 
   var queued = false;
