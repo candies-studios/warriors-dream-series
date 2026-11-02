@@ -86,7 +86,7 @@
     });
     var err = {};
     if (v.name.length < 2) err.name = 'Enter your full name.';
-    else if (!/^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ .'-]*$/.test(v.name)) err.name = 'Use English letters, as on your photo ID.';
+    else if (!/^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ .'-]*$/.test(v.name)) err.name = 'Use English letters only.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.email)) err.email = 'Enter a valid email address.';
     var digits = v.phone.replace(/\D/g, '');
     if (!(/^(91)?[6-9]\d{9}$/.test(digits) || (v.phone.charAt(0) === '+' && digits.length >= 8 && digits.length <= 15))) {
