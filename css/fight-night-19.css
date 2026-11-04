@@ -187,3 +187,9 @@
 @media (prefers-reduced-motion: reduce) { .fn19 * { transition: none !important; } }
 .fn19-names .fn19-name { display: block; }
 .fn19-matchup, .fn19-strip, .fn19-bout-header { width: 100%; }
+
+/* Long names (e.g. Nongmaithem, Dzhavkharali) fit inside the name column on phones */
+.fn19-names { min-width: 0; }
+@media (max-width: 480px) {
+  .fn19-names .fn19-name { font-size: clamp(13px, 3.7vw, 18px); letter-spacing: .2px; }
+}
