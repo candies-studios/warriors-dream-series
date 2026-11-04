@@ -1,7 +1,7 @@
 -- =============================================================================
 -- WDS — 24: Fight Night 19 bout 13 change (4 Nov 2026)
 --
--- * Bout 13, Bantamweight 61.2 kg: Nongmaithem Bonjovi "Rockstar" replaces
+-- * Bout 13, Bantamweight 61.2 kg: Nongmaithem Bonjovi replaces
 --   Ketan Uppadhyay in the blue corner (vs Dzhavkharali Nuraliev).
 --   Record 4-3-0, last fight loss, India, 5'4" (163 cm), photo.
 -- Only bout 13 is changed. Stops if bout 13 has started, has scores or officials.
@@ -24,13 +24,13 @@ begin
   select id into f from public.fighters
    where name_key in ('nongmaithem bonjovi', 'bonjovi nongmaithem') order by created_at limit 1;
   if f is null then
-    insert into public.fighters (name, nickname, country, weight_class, height, declared_record, photo_url)
-    values ('Nongmaithem Bonjovi', 'Rockstar', 'India', 'Bantamweight', '163 cm', '4-3-0',
+    insert into public.fighters (name, country, weight_class, height, declared_record, photo_url)
+    values ('Nongmaithem Bonjovi', 'India', 'Bantamweight', '163 cm', '4-3-0',
             'https://wdsmma.com/assets/images/fight-night-19/nongmaithem-bonjovi.webp')
     returning id into f;
   else
     update public.fighters
-       set nickname = 'Rockstar', country = 'India', height = '163 cm', declared_record = '4-3-0',
+       set nickname = null, country = 'India', height = '163 cm', declared_record = '4-3-0',
            weight_class = coalesce(weight_class, 'Bantamweight'),
            photo_url = 'https://wdsmma.com/assets/images/fight-night-19/nongmaithem-bonjovi.webp'
      where id = f;
@@ -49,7 +49,7 @@ begin
 end $$;
 
 -- Check: bout 13
-select b.bout_number, b.bout_name, fb.name as blue_corner, fb.nickname, fr.name as red_corner, fb.photo_url
+select b.bout_number, b.bout_name, fb.name as blue_corner, fr.name as red_corner, fb.photo_url
   from public.bouts b join public.events e on e.id = b.event_id
   left join public.fighters fb on fb.id = b.blue_fighter_id
   left join public.fighters fr on fr.id = b.red_fighter_id
