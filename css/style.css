@@ -2075,6 +2075,16 @@ body.community-open { overflow: hidden; }
   display: none !important;
 }
 
+/* ==========================================================================
+   FEATURE SWITCH — Blog
+   The Blog pages (pages/blog.html, pages/blog-post.html) are kept but
+   hidden from the menus. To SHOW Blog again: delete the rule below
+   (the 3 lines starting with [data-feature="blog"]), then commit and push.
+   ========================================================================== */
+[data-feature="blog"] {
+  display: none !important;
+}
+
 /* Home hero tagline: brighter and bolder for readability over the video (size unchanged) */
 .hero .hero-content p {
   color: #ffffff;

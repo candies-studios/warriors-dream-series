@@ -19,7 +19,7 @@
       body:
         '<p>Warriors Dream Series returns to Navi Mumbai for <strong>WDS Fight Night 19</strong> on <strong>Saturday, 12 December 2026</strong> at the CIDCO Exhibition Ground, Vashi. Doors open for a 5:00 PM start, with fifteen professional MMA bouts scheduled over three five-minute rounds.</p>' +
         '<h2>Main event and co-main event</h2>' +
-        '<p>Light heavyweight <strong>Gaganpal Singh Dua</strong> (5-0-0) headlines the night at 93.0 kg; his opponent will be announced soon. In the co-main event, <strong>Adnan Khan</strong> meets <strong>Pratik Shetty</strong> at welterweight (77.1 kg).</p>' +
+        '<p>Light heavyweight <strong>Gaganpal Singh Dua</strong> (5-0-0) headlines the night at 93.0 kg; his opponent will be announced soon. In the co-main event, <strong>Surbala Laishram</strong> meets <strong>Arofat Toirova</strong> at a 54 kg catchweight, and <strong>Adnan Khan</strong> faces <strong>Pratik Shetty</strong> at welterweight (77.1 kg).</p>' +
         '<h2>Full card</h2>' +
         '<ol class="blog-list">' +
           '<li>Main Event · Light Heavyweight 93.0 kg — Gaganpal Singh Dua vs TBA</li>' +
