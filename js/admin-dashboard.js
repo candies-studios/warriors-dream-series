@@ -508,7 +508,9 @@ async function addJudge() {
     }
     const { error } = await db.from('official_invites').upsert([{ email, name, role, phone: orNull(val('judgePhone')), invited_by: me.id }]);
     if (error) { showMessage('judgeMessage', friendly(error), 'error'); return; }
-    showMessage('judgeMessage', `${name} added. They sign in to ScoreHUB with their name, role and a PIN they choose.`, 'success');
+    showMessage('judgeMessage', role === 'STATS'
+        ? `${name} added as a Stat Counter. They sign in on the ScoreHUB Strike Sheet page (strike-sheet.html) with their name and a PIN they choose.`
+        : `${name} added. They sign in to ScoreHUB with their name, role and a PIN they choose.`, 'success');
     ['judgeName', 'judgeEmail', 'judgePhone'].forEach(id => setVal(id, ''));
     loadJudges();
 }
@@ -600,19 +602,27 @@ async function loadScorecards() {
 async function loadRankings() {
     const container = spinner('rankingsList');
     const weightClass = val('rankingWeightClass');
-    let query = db.from('public_rankings').select('name,nickname,division_name,score,win_pct,method_points,wins,losses,draws,division_rank,overall_rank');
+    let query = db.from('public_rankings').select('name,nickname,division_name,score,win_pct,method_points,stats_score,wins,losses,draws,division_rank,overall_rank');
     query = weightClass ? query.eq('division_name', weightClass).order('division_rank') : query.order('overall_rank');
-    const { data, error } = await query;
+    let { data, error } = await query;
+    if (error && /stats_score/.test(error.message || '')) {   // database not updated for the Strike Sheet yet
+        query = db.from('public_rankings').select('name,nickname,division_name,score,win_pct,method_points,wins,losses,draws,division_rank,overall_rank');
+        query = weightClass ? query.eq('division_name', weightClass).order('division_rank') : query.order('overall_rank');
+        ({ data, error } = await query);
+    }
     loadWeights();
+    loadFormula();
+    loadStatWeights();
     if (error) { listError(container, error); return; }
     if (!data.length) {
         container.innerHTML = '<div class="empty-state"><p>No rankings yet</p><p>Finalize some results to see rankings</p></div>';
         return;
     }
-    container.innerHTML = '<table class="data-table"><thead><tr><th>Rank</th><th>Fighter</th><th>Weight Class</th><th>Score</th><th>Win %</th><th>Method pts</th><th>Record</th></tr></thead><tbody>' +
+    container.innerHTML = '<table class="data-table"><thead><tr><th>Rank</th><th>Fighter</th><th>Weight Class</th><th>Score</th><th>Win %</th><th>Method pts</th><th>Stats</th><th>Record</th></tr></thead><tbody>' +
         data.map(r => `<tr><td>#${weightClass ? r.division_rank : r.overall_rank}</td><td>${esc(r.name)}${r.nickname ? ' (' + esc(r.nickname) + ')' : ''}</td>` +
             `<td>${esc(r.division_name)}</td><td><strong>${Number(r.score).toFixed(2)}</strong></td><td>${Number(r.win_pct).toFixed(1)}%</td>` +
-            `<td>${Number(r.method_points).toFixed(2)}</td><td>${r.wins}W - ${r.losses}L${r.draws ? ' - ' + r.draws + 'D' : ''}</td></tr>`).join('') +
+            `<td>${Number(r.method_points).toFixed(2)}</td><td>${r.stats_score == null ? '–' : Number(r.stats_score).toFixed(1)}</td>` +
+            `<td>${r.wins}W - ${r.losses}L${r.draws ? ' - ' + r.draws + 'D' : ''}</td></tr>`).join('') +
         '</tbody></table>';
 }
 
@@ -654,6 +664,70 @@ async function saveWeight(key) {
         .eq('result_type', resultType).eq('round_no', Number(roundNo)).select('result_type');
     if (error || !data.length) { showMessage('weightsMessage', friendly(error || { message: 'permission denied' }), 'error'); return; }
     showMessage('weightsMessage', `${METHOD_LABELS[resultType] || resultType}${Number(roundNo) ? ' R' + roundNo : ''} = ${weight}. Rankings recalculated.`, 'success');
+    loadRankings();
+}
+
+// ---------------------------------------------------------------- ranking formula + stat points (Strike Sheet)
+async function loadFormula() {
+    const box = document.getElementById('formulaEditor');
+    if (!box) return;
+    const { data, error } = await db.from('ranking_formula').select('win_pct_weight,method_weight,stats_weight,stats_neutral').limit(1);
+    if (error || !data || !data.length) {
+        box.innerHTML = '<div class="empty-state"><p>The stats part of the ranking is not set up yet (run ScoreHUB config/migrations/003_strike_sheet_and_rankings.sql).</p></div>';
+        return;
+    }
+    const f = data[0];
+    const n = v => String(Number(v));
+    const hint = document.getElementById('formulaHint');
+    if (hint) hint.textContent = `(Win% × ${n(f.win_pct_weight)} + Win Method Weight × ${n(f.method_weight)}` +
+        (Number(f.stats_weight) ? ` + Stats × ${n(f.stats_weight)}` : '') + ') × √(total fights)';
+    const editable = isStaff();
+    const field = (id, label, v, step, max) => `<div class="form-group"><label>${label}</label>` +
+        (editable ? `<input type="number" id="${id}" step="${step}" min="0" max="${max}" value="${Number(v)}">` : `<p>${Number(v)}</p>`) + '</div>';
+    box.innerHTML = '<div class="form-grid">' +
+        field('fWin', 'A · Win% weight', f.win_pct_weight, '0.05', 1) +
+        field('fMethod', 'B · Win method weight', f.method_weight, '0.05', 1) +
+        field('fStats', 'C · Stats weight', f.stats_weight, '0.05', 1) +
+        field('fNeutral', 'Stats when none recorded', f.stats_neutral, '1', 100) + '</div>' +
+        (editable ? '<div class="form-actions"><button onclick="saveFormula()">Save formula</button></div>' : '');
+}
+
+async function saveFormula() {
+    if (!requireStaff('formulaMessage')) return;
+    const row = {
+        win_pct_weight: Number(val('fWin')), method_weight: Number(val('fMethod')),
+        stats_weight: Number(val('fStats')), stats_neutral: Number(val('fNeutral')),
+    };
+    if (![row.win_pct_weight, row.method_weight, row.stats_weight].every(x => x >= 0 && x <= 1) || !(row.stats_neutral >= 0 && row.stats_neutral <= 100)) {
+        showMessage('formulaMessage', 'Weights must be between 0 and 1; the neutral stats value between 0 and 100.', 'error'); return;
+    }
+    const { data, error } = await db.from('ranking_formula').update(row).eq('id', true).select('id');
+    if (error || !data.length) { showMessage('formulaMessage', friendly(error || { message: 'permission denied' }), 'error'); return; }
+    showMessage('formulaMessage', 'Formula saved. Rankings recalculated.', 'success');
+    loadRankings();
+}
+
+async function loadStatWeights() {
+    const container = document.getElementById('statWeightsList');
+    if (!container) return;
+    const { data, error } = await db.from('stat_score_weights').select('key,weight,label,sort').order('sort');
+    if (error || !data) { container.innerHTML = ''; return; }
+    const editable = isStaff();
+    container.innerHTML = '<table class="data-table"><thead><tr><th>Stat</th><th>Points</th><th></th></tr></thead><tbody>' +
+        data.map(w => `<tr><td>${esc(w.label)}</td><td>${editable
+            ? `<input type="number" step="0.05" min="0" max="100" value="${Number(w.weight)}" data-statw="${esc(w.key)}" style="width: 90px">`
+            : Number(w.weight)}</td><td>${editable ? `<button class="btn-secondary" onclick="saveStatWeight('${esc(w.key)}')">Save</button>` : ''}</td></tr>`).join('') +
+        '</tbody></table>';
+}
+
+async function saveStatWeight(key) {
+    if (!requireStaff('statWeightsMessage')) return;
+    const input = document.querySelector(`[data-statw="${key}"]`);
+    const weight = Number(input && input.value);
+    if (!(weight >= 0 && weight <= 100)) { showMessage('statWeightsMessage', 'Enter points between 0 and 100', 'error'); return; }
+    const { data, error } = await db.from('stat_score_weights').update({ weight }).eq('key', key).select('key');
+    if (error || !data.length) { showMessage('statWeightsMessage', friendly(error || { message: 'permission denied' }), 'error'); return; }
+    showMessage('statWeightsMessage', 'Saved. Rankings recalculated.', 'success');
     loadRankings();
 }
 

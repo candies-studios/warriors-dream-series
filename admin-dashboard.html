@@ -823,6 +823,7 @@
                         <select id="judgeRole">
                             <option value="JUDGE">Judge</option>
                             <option value="REFEREE">Referee</option>
+                            <option value="STATS">Stat Counter (ScoreHUB Strike Sheet)</option>
                             <option value="PROMOTER">Promoter (management)</option>
                             <option value="ADMIN">Admin</option>
                         </select>
@@ -878,8 +879,18 @@
                 <div class="form-actions">
                     <button class="btn-secondary" onclick="recalculateRankings()">Recalculate Now</button>
                 </div>
-                <p class="form-hint">Score = (Win% × 0.7 + Win Method Weight × 0.3) × √(total fights). Rankings update automatically whenever results are finalized or a weight is changed; only finalized results count.</p>
+                <p class="form-hint">Score = <span id="formulaHint">(Win% × 0.7 + Win Method Weight × 0.3) × √(total fights)</span>. Rankings update automatically whenever results are finalized or a weight is changed; only finalized results count.</p>
                 <div id="rankingsList"></div>
+
+                <h2 style="margin-top: 40px;">Ranking Formula</h2>
+                <p class="form-hint">Score = (Win% × A + Win Method Weight × B + Stats × C) × √(total fights). <strong>Stats</strong> is a fighter's average share of the fight statistics recorded on the ScoreHUB Strike Sheet (50 = even fight). Fighters with no recorded stats count as the neutral value. Saving recalculates the rankings.</p>
+                <div id="formulaMessage"></div>
+                <div id="formulaEditor"></div>
+
+                <h2 style="margin-top: 40px;">Stat Points</h2>
+                <p class="form-hint">What each recorded stat is worth when working out a fighter's stats share in a bout (also the performance score on the Strike Sheet). Saving recalculates the rankings.</p>
+                <div id="statWeightsMessage"></div>
+                <div id="statWeightsList"></div>
 
                 <h2 style="margin-top: 40px;">Win Method Weights</h2>
                 <p class="form-hint">Each win adds the weight for how and in which round it ended (round 4/5 finishes use the round-3 weight). Rows marked "to confirm" are not on the committee sheet yet.</p>

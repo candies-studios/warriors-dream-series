@@ -434,7 +434,7 @@
 
       <details class="pf-method">
         <summary>How the ranking works</summary>
-        <p><strong>WDS Ranking Score</strong> = (Win% × 0.7 + Win Method Weight × 0.3) × √(total fights). Every win adds a weight for how it was won — earlier finishes count more (KO/TKO R1 0.75 · R2 0.70 · R3 0.65, Submission R1 0.70 · R2 0.65 · R3 0.60, Decision 0.55). Only official, finalized <strong>professional</strong> MMA bouts count — amateur bouts are not ranked. Women are ranked separately. Each division shows its champion and the top 10 contenders. Click a fighter to see their profile and every WDS fight they have had.</p>
+        <p><strong>WDS Ranking Score</strong> = <span id="formulaText">(Win% × 0.7 + Win Method Weight × 0.3) × √(total fights)</span>.<span id="statsText" hidden> <strong>Stats</strong> is the fighter's average share of the fight statistics (significant strikes, knockdowns, takedowns, submission attempts, reversals and control time, recorded live on the ScoreHUB Strike Sheet) — 50 means an even fight; fighters with no recorded stats count as 50.</span> Every win adds a weight for how it was won — earlier finishes count more (KO/TKO R1 0.75 · R2 0.70 · R3 0.65, Submission R1 0.70 · R2 0.65 · R3 0.60, Decision 0.55). Only official, finalized <strong>professional</strong> MMA bouts count — amateur bouts are not ranked. Women are ranked separately. Each division shows its champion and the top 10 contenders. Click a fighter to see their profile and every WDS fight they have had.</p>
       </details>
 
       <div class="pf-grid" id="rankingsGrid"></div>
@@ -489,8 +489,11 @@
     //   • Men: Flyweight → Heavyweight (8 divisions). Women are ranked separately:
     //     Strawweight, Flyweight, Bantamweight. Catchweight, men's strawweight and
     //     any other division are left out.
-    //   • Score = (Win% × 0.7 + Win Method Weight × 0.3) × √(total fights), the
-    //     committee formula, using the win-method weights stored in the database.
+    //   • Score = (Win% × a + Win Method Weight × b + Stats × c) × √(total fights),
+    //     with a/b/c from the ranking_formula table (committee default 0.7/0.3/0
+    //     until the stats part is switched on) and the win-method weights stored
+    //     in the database. Stats = average stats share over fights with strike
+    //     stats (public_bout_stats); none recorded = the neutral value (50).
     // ---------------------------------------------------------------------------
 
     const MEN_DIVISIONS = [
@@ -638,10 +641,21 @@
       if (Array.isArray(w)) return w[Math.min(Math.max(round || 3, 1), 3) - 1] || 0;
       return w;
     }
+    // Formula weights; replaced by the ranking_formula row from the database.
+    let FORMULA = { win: 0.7, method: 0.3, stats: 0, neutral: 50 };
+    function statsAverage(f) { return f.statN ? f.statSum / f.statN : FORMULA.neutral; }
     function rankingScore(f) {
       const total = f.wins + f.losses + f.draws;
       if (!total) return 0;
-      return ((100 * f.wins / total) * 0.7 + f.methodPoints * 0.3) * Math.sqrt(total);
+      return ((100 * f.wins / total) * FORMULA.win + f.methodPoints * FORMULA.method + statsAverage(f) * FORMULA.stats) * Math.sqrt(total);
+    }
+    function showFormula() {
+      const n = v => String(Number(v));
+      const el = document.getElementById('formulaText');
+      if (el) el.textContent = `(Win% × ${n(FORMULA.win)} + Win Method Weight × ${n(FORMULA.method)}` +
+        (FORMULA.stats ? ` + Stats × ${n(FORMULA.stats)}` : '') + ') × √(total fights)';
+      const st = document.getElementById('statsText');
+      if (st) st.hidden = !FORMULA.stats;
     }
     function byScore(a, b) {
       return (b.score - a.score) || (b.wins - a.wins) || a.name.localeCompare(b.name);
@@ -656,11 +670,12 @@
       return DIVISION_BY_KEY[key] ? key : null;
     }
 
-    function buildDivisions(bouts, weights) {
+    function buildDivisions(bouts, weights, shares) {
+      shares = shares || {};
       const d = {};
       ALL_DIVISIONS.forEach(x => { d[x.key] = { key: x.key, name: x.name, subtitle: x.subtitle, champion: null, fighters: [] }; });
       const stats = {};
-      const get = name => stats[name] || (stats[name] = { name, wins: 0, losses: 0, draws: 0, ncs: 0, methodPoints: 0, division: null, last: null });
+      const get = name => stats[name] || (stats[name] = { name, wins: 0, losses: 0, draws: 0, ncs: 0, methodPoints: 0, statSum: 0, statN: 0, division: null, last: null });
 
       bouts
         .map(b => Object.assign({}, b, { division: rankedDivision(b) }))
@@ -677,6 +692,8 @@
             else if (b.winner === corner) { outcome = 'W'; f.wins++; earned = winWeight(weights, b.resultType, b.round); f.methodPoints += earned; }
             else if (b.winner) { outcome = 'L'; f.losses++; }
             else { outcome = 'D'; f.draws++; }
+            const share = outcome === 'NC' || !b.id || !fid ? null : shares[b.id + '|' + fid];
+            if (share != null) { f.statSum += Number(share); f.statN++; }
             f.division = b.division;
             f.last = { outcome, resultType: b.resultType, round: b.round, sec: b.sec, opponent, event: b.event, earned, change: rankingScore(f) - before };
           });
@@ -841,9 +858,18 @@
       if (!window.WDS || !window.WDS.enabled) return Promise.reject(new Error('offline'));
       return Promise.all([
         window.WDS.events(),
-        window.WDS.rest('public_bout_card?select=event_id,bout_number,weight_class,red_name,blue_name,red_photo_url,blue_photo_url,red_fighter_id,blue_fighter_id,winner_id,result_type,end_round,end_time_sec&bout_type=eq.PROFESSIONAL&discipline=eq.MMA&result_status=eq.final'),
-        window.WDS.rest('ranking_method_weights?select=result_type,round_no,weight').catch(() => null)
-      ]).then(([events, rows, weightRows]) => {
+        window.WDS.rest('public_bout_card?select=id,event_id,bout_number,weight_class,red_name,blue_name,red_photo_url,blue_photo_url,red_fighter_id,blue_fighter_id,winner_id,result_type,end_round,end_time_sec&bout_type=eq.PROFESSIONAL&discipline=eq.MMA&result_status=eq.final'),
+        window.WDS.rest('ranking_method_weights?select=result_type,round_no,weight').catch(() => null),
+        window.WDS.rest('ranking_formula?select=win_pct_weight,method_weight,stats_weight,stats_neutral').catch(() => null),
+        window.WDS.rest('public_bout_stats?select=bout_id,fighter_id,stats_share&bout_type=eq.PROFESSIONAL&discipline=eq.MMA').catch(() => null)
+      ]).then(([events, rows, weightRows, formulaRows, statRows]) => {
+        if (formulaRows && formulaRows.length) {
+          const fr = formulaRows[0];
+          FORMULA = { win: Number(fr.win_pct_weight), method: Number(fr.method_weight), stats: Number(fr.stats_weight), neutral: Number(fr.stats_neutral) };
+          showFormula();
+        }
+        const shares = {};
+        (statRows || []).forEach(s => { if (s.stats_share != null) shares[s.bout_id + '|' + s.fighter_id] = Number(s.stats_share); });
         if (!rows.length) throw new Error('no professional results yet');
         const eventsById = {};
         events.forEach(e => { eventsById[e.id] = e; });
@@ -859,19 +885,19 @@
         }
         const bouts = rows.map(r => {
           const e = eventsById[r.event_id] || {};
-          return { event: e.title || '', date: e.event_date || '', slug: e.slug || '', boutNumber: r.bout_number,
+          return { id: r.id, event: e.title || '', date: e.event_date || '', slug: e.slug || '', boutNumber: r.bout_number,
                    weightClass: r.weight_class, red: r.red_name, blue: r.blue_name, redPhoto: r.red_photo_url, bluePhoto: r.blue_photo_url, redId: r.red_fighter_id, blueId: r.blue_fighter_id,
                    winner: r.winner_id && r.winner_id === r.red_fighter_id ? 'R' : r.winner_id && r.winner_id === r.blue_fighter_id ? 'B' : '',
                    resultType: r.result_type, round: r.end_round, sec: r.end_time_sec };
         });
-        render(buildDivisions(bouts, weights));
+        render(buildDivisions(bouts, weights, shares));
       });
     }
 
     document.addEventListener('DOMContentLoaded', () => {
       render(buildDivisions(SAVED_PRO_BOUTS.map(fromSaved), DEFAULT_WEIGHTS));
       loadRankings()
-        .then(() => window.WDS.subscribe(['fighter_rankings', 'bout_points'], () => loadRankings().catch(() => {})))
+        .then(() => window.WDS.subscribe(['fighter_rankings', 'bout_points', 'ranking_formula'], () => loadRankings().catch(() => {})))
         .catch(e => console.warn('[wds] rankings: using the saved list', e && e.message));
     });
   </script>
