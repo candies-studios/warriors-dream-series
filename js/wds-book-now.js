@@ -1,8 +1,8 @@
 /*
  * WDS Fight Night 19 — Book Now page (tickets/wds-fight-night-19/).
  *
- * BOOK NOW goes straight to the booking page set in data-booking-url on
- * <body> (where categories, seat prices and payment are handled). While that
+ * BOOK NOW opens the booking page set in data-booking-url on <body> in a
+ * new tab (where categories, seat prices and payment are handled). While that
  * attribute is empty, BOOK NOW opens a details form that ends with a
  * "booking opens shortly" message instead.
  *
@@ -69,11 +69,11 @@
   // otherwise it opens the details form (which ends with "booking opens shortly").
   document.querySelectorAll('.js-book').forEach(function (b) {
     var direct = bookingUrl();
-    if (direct && b.tagName === 'A') b.setAttribute('href', direct);
+    if (direct && b.tagName === 'A') { b.setAttribute('href', direct); b.target = '_blank'; b.rel = 'noopener'; }
     b.addEventListener('click', function (e) {
       e.preventDefault();
       var url = bookingUrl();
-      if (url) { window.location.href = url; return; }
+      if (url) { window.open(url, '_blank', 'noopener'); return; }   // new tab
       open();
     });
   });
@@ -119,8 +119,8 @@
 
     var url = bookingUrl();
     if (url) {
-      show('tk-going');
-      setTimeout(function () { window.location.href = url; }, 600);
+      window.open(url, '_blank', 'noopener');
+      close();
     } else {
       $('tk-hold-name').textContent = r.values.name.split(/\s+/)[0];
       show('tk-hold');

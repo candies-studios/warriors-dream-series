@@ -20,7 +20,10 @@
   var BASE = script ? (script.getAttribute('src') || '').replace(/js\/wds-tickets-cta\.js(\?.*)?$/, '') : '';
 
   // Events with BOOK NOW. Remove an entry to hide its buttons.
-  var onsale = [{ slug: 'wds-fight-night-19', title: 'WDS Fight Night 19', page_url: 'pages/wds-fight-night-19.html' }];
+  // booking_url: the ticket payment page; BOOK NOW opens it in a new tab.
+  // (Leave booking_url empty to send BOOK NOW to the site's tickets page instead.)
+  var onsale = [{ slug: 'wds-fight-night-19', title: 'WDS Fight Night 19', page_url: 'pages/wds-fight-night-19.html',
+                  booking_url: 'https://rzp.io/rzp/f1YaAiX' }];
 
   // Per-event images (paths from the site root). `title` must match the event title.
   var images = [{
@@ -53,7 +56,7 @@
     document.head.appendChild(s);
   }
 
-  function ticketUrl(ev) { return BASE + 'tickets/' + encodeURIComponent(ev.slug) + '/'; }
+  function ticketUrl(ev) { return ev.booking_url || (BASE + 'tickets/' + encodeURIComponent(ev.slug) + '/'); }
 
   function pointsTo(a, ev) {
     var href = a.getAttribute('href') || '';
@@ -67,6 +70,7 @@
     var a = document.createElement('a');
     a.className = 'wds-buy-tickets' + (extra ? ' ' + extra : '');
     a.href = ticketUrl(ev);
+    if (ev.booking_url) { a.target = '_blank'; a.rel = 'noopener'; }
     a.setAttribute('data-event', ev.slug);
     a.setAttribute('aria-label', 'Book tickets for ' + ev.title);
     a.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-4V7zm6 0v10h2V7H9z"/></svg><span>Book Now</span>';
