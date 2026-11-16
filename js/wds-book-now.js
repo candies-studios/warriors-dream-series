@@ -1,9 +1,9 @@
 /*
  * WDS Fight Night 19 — Book Now page (tickets/wds-fight-night-19/).
  *
- * BOOK NOW opens a details form. On submit the visitor goes to the booking
- * page set in data-booking-url on <body> (where categories, seat prices and
- * payment are handled). While that attribute is empty, the form ends with a
+ * BOOK NOW goes straight to the booking page set in data-booking-url on
+ * <body> (where categories, seat prices and payment are handled). While that
+ * attribute is empty, BOOK NOW opens a details form that ends with a
  * "booking opens shortly" message instead.
  *
  * Nothing typed in the form is stored or sent anywhere by this page, and no
@@ -65,8 +65,17 @@
     if (lastFocus) lastFocus.focus();
   }
 
+  // BOOK NOW goes straight to the booking page when data-booking-url is set;
+  // otherwise it opens the details form (which ends with "booking opens shortly").
   document.querySelectorAll('.js-book').forEach(function (b) {
-    b.addEventListener('click', function (e) { e.preventDefault(); open(); });
+    var direct = bookingUrl();
+    if (direct && b.tagName === 'A') b.setAttribute('href', direct);
+    b.addEventListener('click', function (e) {
+      e.preventDefault();
+      var url = bookingUrl();
+      if (url) { window.location.href = url; return; }
+      open();
+    });
   });
   modal.querySelectorAll('[data-close]').forEach(function (b) { b.addEventListener('click', close); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.hidden) close(); });
