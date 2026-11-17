@@ -187,6 +187,7 @@
   .page-contact .contact-hero { min-height: 240px; }
   .page-contact .contact-panel { padding: 60px 0; }
   .page-contact .contact-panel-inner { grid-template-columns: 1fr; padding: 0 16px; }
+  .page-contact .contact-panel-inner > * { min-width: 0; }
   .page-contact .contact-details h2 { font-size: 32px; line-height: 40px; }
   .page-contact .contact-form { margin-top: 10px; }
   .page-contact .contact-form .field-row { grid-template-columns: 1fr; }

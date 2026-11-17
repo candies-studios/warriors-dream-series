@@ -1,0 +1,10 @@
+# GitHub Pages build settings for wdsmma.com.
+# The files and folders below stay in the repository but are NOT published
+# on the website (they are notes, database scripts and tools for the team).
+exclude:
+  - README.md
+  - README-BOOK-NOW.md
+  - "*.patch"
+  - "*.sql"
+  - supabase
+  - tools

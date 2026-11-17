@@ -91,3 +91,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+// Background videos (Home hero) start after the page itself has loaded,
+// so the YouTube player does not slow down the first view.
+window.addEventListener('load', function () {
+  document.querySelectorAll('iframe[data-src]').forEach(function (f) { f.src = f.getAttribute('data-src'); });
+});

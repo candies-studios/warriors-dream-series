@@ -207,3 +207,7 @@ a.eu-cta:hover { background: var(--red, #d7272a); color: #fff; }
 .fn19-soon { text-align: center; padding: clamp(40px, 6vw, 80px) 20px; }
 .fn19-soon .eu-cta { background: #e0181d; color: #fff; cursor: default; }
 .fn19-soon p { margin: 22px auto 0; max-width: 520px; color: inherit; opacity: .8; }
+
+/* Fighter names link to their profile pages; same look as plain names. */
+.wds-name a { color: inherit; text-decoration: none; }
+.wds-name a:hover, .wds-name a:focus-visible { text-decoration: underline; text-underline-offset: 3px; }

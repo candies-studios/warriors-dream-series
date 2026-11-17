@@ -113,8 +113,8 @@
         if (!img.closest('.ev-poster, .ev-card, .event-card')) return;
         if (img.getAttribute('src') !== thumb) img.setAttribute('src', thumb);
       });
-      var onEventPage = /event\.html$/.test(location.pathname) &&
-        new URLSearchParams(location.search).get('e') === im.slug;
+      var onEventPage = document.body.getAttribute('data-event') === im.slug ||
+        (/event\.html$/.test(location.pathname) && new URLSearchParams(location.search).get('e') === im.slug);
       var hero = onEventPage && document.querySelector('.page-hero');
       var bg = "url('" + BASE + im.hero + "')";
       if (hero && hero.style.backgroundImage !== bg) hero.style.backgroundImage = bg;

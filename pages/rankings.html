@@ -1,10 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-IN">
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rankings — Warriors Dream Series</title>
+<meta name="description" content="WDS MMA rankings: champions and ranked fighters in every division of Warriors Dream Series.">
+<!-- SEO -->
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://wdsmma.com/pages/rankings.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Warriors Dream Series">
+<meta property="og:locale" content="en_IN">
+<meta property="og:title" content="Rankings — Warriors Dream Series">
+<meta property="og:description" content="WDS MMA rankings: champions and ranked fighters in every division of Warriors Dream Series.">
+<meta property="og:url" content="https://wdsmma.com/pages/rankings.html">
+<meta property="og:image" content="https://wdsmma.com/assets/images/og/wds-og-default.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Rankings — Warriors Dream Series">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#050505">
+<!-- /SEO -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Oswald:wght@400;500;600;700&family=Roboto+Condensed:wght@300;400;500;600&display=swap">
 <link rel="stylesheet" href="../css/style.css">
 <link rel="icon" type="image/png" sizes="32x32" href="../assets/images/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="../assets/images/favicon-192x192.png">
@@ -720,19 +738,19 @@
     // ---- rendering (layout modelled on pflmma.com/rankings) ---------------------
     // Fighter cut-out photos kept in assets/images (used when the database has no photo).
     const FIGHTER_PHOTOS = {
-      'jeko laishram': 'Jeko_Laishram.png',
-      'gaganpal singh dua': 'Gaganpal_Singh.png',
-      'surbala devi laishram': 'Surbala_Laishram.png',
-      'ashish rawat': 'Ashish_Rawat.png',
-      'ben holdsworth': 'Ben_Holdsworth.png',
-      'bishal sahu': 'Bishal_Sahu.png',
-      'edukondal rao': 'Edukondal_Rao.png',
-      'kimson tony': 'Kimson.png',
-      'rohit raina': 'Rohit_Raina.png',
-      'sagar ramdas dange': 'Sagar_Dange.png',
-      'sangramsingh godse': 'Sangramsingh_Godase.png',
-      'thiaumuanlal guite': 'Thiaumuanlal_Guite.png',
-      'ajay singh dhoni': 'Ajay_Singh_Dhoni.png'
+      'jeko laishram': 'Jeko_Laishram.webp',
+      'gaganpal singh dua': 'Gaganpal_Singh.webp',
+      'surbala devi laishram': 'Surbala_Laishram.webp',
+      'ashish rawat': 'Ashish_Rawat.webp',
+      'ben holdsworth': 'Ben_Holdsworth.webp',
+      'bishal sahu': 'Bishal_Sahu.webp',
+      'edukondal rao': 'Edukondal_Rao.webp',
+      'kimson tony': 'Kimson.webp',
+      'rohit raina': 'Rohit_Raina.webp',
+      'sagar ramdas dange': 'Sagar_Dange.webp',
+      'sangramsingh godse': 'Sangramsingh_Godase.webp',
+      'thiaumuanlal guite': 'Thiaumuanlal_Guite.webp',
+      'ajay singh dhoni': 'Ajay_Singh_Dhoni.webp'
     };
     const TOP_SHOWN = 10;   // like pflmma.com: champion + the top 10 contenders per division
     const SILHOUETTE = '<svg viewBox="0 0 120 130" aria-hidden="true"><circle cx="60" cy="38" r="26" fill="currentColor"/><path d="M8 130c4-38 26-58 52-58s48 20 52 58z" fill="currentColor"/></svg>';

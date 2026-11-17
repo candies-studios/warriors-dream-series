@@ -1,0 +1,13 @@
+# Warriors Dream Series — https://wdsmma.com
+User-agent: *
+Allow: /
+
+# Staff tools and internal files (not part of the public website)
+Disallow: /admin-dashboard.html
+Disallow: /supabase/
+Disallow: /tools/
+Disallow: /README
+Disallow: /*.sql$
+Disallow: /*.patch$
+
+Sitemap: https://wdsmma.com/sitemap.xml

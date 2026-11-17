@@ -2,8 +2,6 @@
    Warriors Dream Series — site stylesheet
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Oswald:wght@400;500;600;700&family=Roboto+Condensed:wght@300;400;500;600&display=swap');
-
 :root {
   --bg: #050505;
   --bg-alt: #0d0d0d;
@@ -39,6 +37,8 @@ h1, h2, h3, h4 {
 
 a { color: inherit; text-decoration: none; }
 img { max-width: 100%; display: block; }
+/* Images carry width/height so the page does not jump while they load. */
+:where(img[width][height]) { height: auto; }
 ul { list-style: none; margin: 0; padding: 0; }
 
 .container {

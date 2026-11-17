@@ -34,8 +34,21 @@
     'wds-fight-night-19': 'pages/wds-fight-night-19.html'
   };
   function cardPage(ev) { return ev.page_url || CARD_PAGES[ev.slug] || ''; }
+  // Static, search-friendly pages built for finished events and fighters
+  // (js/wds-static-urls.js, regenerated from the database by tools/seo).
+  var STATIC = window.WDS_STATIC || { events: {}, fighters: {} };
+  function staticEventUrl(ev) {
+    var path = ev && ev.status === 'completed' && STATIC.events && STATIC.events[ev.slug];
+    return path ? BASE + path : '';
+  }
+  function fighterUrl(id) {
+    if (!id) return '';
+    var path = STATIC.fighters && STATIC.fighters[id];
+    return path ? BASE + path : BASE + 'pages/fighter.html?id=' + encodeURIComponent(id);
+  }
   function eventUrl(ev) {
-    // Finished events open the results page (winners, methods, ranking points).
+    // Finished events open their results page (winners, methods, ranking points).
+    if (staticEventUrl(ev)) return staticEventUrl(ev);
     if (ev.status === 'completed' && !ev.results_url) return BASE + 'pages/event.html?e=' + encodeURIComponent(ev.slug);
     if (!ev.page_url && CARD_PAGES[ev.slug]) return BASE + CARD_PAGES[ev.slug];
     if (ev.page_url) return /^(https?:|\/)/.test(ev.page_url) ? ev.page_url : BASE + ev.page_url;
@@ -240,7 +253,7 @@
       return '<div class="wds-corner wds-' + side + (winner ? ' is-winner' : '') + (res && b.winner_id && !winner ? ' is-loser' : '') + '">' +
         photo(side === 'blue' ? b.blue_photo_url : b.red_photo_url, name) +
         '<span class="wds-corner-label">' + (side === 'blue' ? 'Blue corner' : 'Red corner') + (winner ? ' · Winner' : '') + '</span>' +
-        '<span class="wds-name">' + esc(name || 'To be announced') + '</span>' +
+        '<span class="wds-name">' + (name && fighterUrl(id) ? '<a href="' + esc(fighterUrl(id)) + '">' + esc(name) + '</a>' : esc(name || 'To be announced')) + '</span>' +
         (nick ? '<span class="wds-nick">“' + esc(nick) + '”</span>' : '') +
         (res ? pointsBlock(points[b.id + ':' + id], HIDE_SCORE_EVENTS.indexOf(b.event_id) !== -1) : '') + '</div>';
     }
@@ -389,12 +402,19 @@
   }
 
   function eventPage() {
-    var slug = new URLSearchParams(location.search).get('e');
+    // Static event pages carry their slug on <body data-event>; the shared
+    // template (pages/event.html?e=<slug>) sends visitors to the static page.
+    var staticSlug = document.body.getAttribute('data-event');
+    var slug = staticSlug || new URLSearchParams(location.search).get('e');
     var root = document.getElementById('wds-fight-card');
     if (!slug || !root) return Promise.resolve();
+    if (!staticSlug && STATIC.events && STATIC.events[slug]) {
+      location.replace(BASE + STATIC.events[slug] + location.hash);
+      return Promise.resolve();
+    }
     return W.eventBySlug(slug).then(function (ev) {
       if (!ev) { root.innerHTML = '<p class="wds-empty">This event could not be found.</p>'; return; }
-      document.title = ev.title + ' — Warriors Dream Series';
+      if (!staticSlug) document.title = ev.title + ' — Warriors Dream Series';
       setText(document.querySelector('.page-hero h1'), ev.title);
       var hero = document.querySelector('.page-hero');
       if (hero && ev.poster_url) hero.style.backgroundImage = "url('" + asset(ev.poster_url) + "')";
