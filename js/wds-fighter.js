@@ -300,6 +300,9 @@
       run()
         .then(() => window.WDS.subscribe && window.WDS.subscribe(['bouts', 'fighters', 'bout_points'], () => run().catch(() => {})))
         .catch(e => {
+          // A static profile page already shows the saved record: keep it
+          // rather than replacing it with an error message.
+          if (STATIC_ID && root.querySelector('.fp-hero')) return;
           const msg = e && e.message;
           if (msg === 'missing' || msg === 'not-found') {
             showState(`We couldn’t find that fighter. <a href="${BACK.href}">Back to ${BACK.text}</a>`);

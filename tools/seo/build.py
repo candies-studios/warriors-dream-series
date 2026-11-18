@@ -294,16 +294,16 @@ def fighter_pages(D):
         url = '/fighters/%s/' % slug
         nick = (' “%s”' % f['nickname']) if f.get('nickname') else ''
         rec = []
-        if pro:
-            rec.append('pro record %s' % record(pro))
-        if am:
-            rec.append('amateur record %s' % record(am))
+        if any(r['final'] for r in pro):
+            rec.append('WDS pro record %s' % record(pro))
+        if any(r['final'] for r in am):
+            rec.append('WDS amateur record %s' % record(am))
         last = next((r for r in rows if r['final']), None)
         nxt = next((r for r in reversed(rows) if r['outcome'] == 'up'), None)
         desc = '%s%s, MMA fighter at Warriors Dream Series' % (f['name'], nick)
         if f.get('hometown'):
             desc += ' from %s' % f['hometown'].title()
-        desc += ': ' + (' and '.join(rec) if rec else 'fight history') + '.'
+        desc += (': ' + ' and '.join(rec) + '.') if rec else '.'
         if nxt:
             desc += ' Next: vs %s at %s.' % (nxt['opponent'], nxt['event']['title'])
         elif last:

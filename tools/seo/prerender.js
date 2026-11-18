@@ -68,7 +68,9 @@ function replaceRegion(html, name, inner) {
   const jobs = [];
   for (const d of fs.readdirSync(path.join(ROOT, 'events'))) jobs.push({ kind: 'event', rel: 'events/' + d + '/index.html' });
   for (const d of fs.readdirSync(path.join(ROOT, 'fighters'))) {
-    if (fs.statSync(path.join(ROOT, 'fighters', d)).isDirectory()) jobs.push({ kind: 'fighter', rel: 'fighters/' + d + '/index.html' });
+    const f = path.join(ROOT, 'fighters', d, 'index.html');
+    // skip redirect pages left at old addresses (no profile to render)
+    if (fs.existsSync(f) && fs.readFileSync(f, 'utf8').includes('data-fighter-id=')) jobs.push({ kind: 'fighter', rel: 'fighters/' + d + '/index.html' });
   }
   jobs.push({ kind: 'home', rel: 'index.html' }, { kind: 'events', rel: 'pages/events.html' });
 
