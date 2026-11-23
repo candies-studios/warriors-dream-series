@@ -1,5 +1,19 @@
 // Warriors Dream Series — shared site behaviour
 
+// Meta Pixel (ID 972856935916727). This file is loaded on every public page,
+// so the pixel runs site-wide; it records a PageView on each page load.
+(function () {
+  if (window.fbq) return;
+  !function (f, b, e, v, n, t, s) {
+    if (f.fbq) return; n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
+    if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0'; n.queue = [];
+    t = b.createElement(e); t.async = !0; t.src = v;
+    s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s);
+  }(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', '972856935916727');
+  fbq('track', 'PageView');
+})();
+
 document.addEventListener('DOMContentLoaded', () => {
   // Mobile nav toggle
   const toggle = document.querySelector('.nav-toggle');
