@@ -2131,3 +2131,14 @@ body.community-open { overflow: hidden; }
 .home-intro a { color: #fff; text-decoration: underline; text-decoration-color: var(--red); text-underline-offset: 3px; }
 .home-intro a:hover { color: var(--red); }
 
+
+/* ---------- Event results pages: summary + previous/next event ---------- */
+.ev-recap { background: var(--bg-alt); padding: 60px 0; }
+.ev-recap-inner { max-width: 980px; }
+.ev-recap h2 { font-size: clamp(1.8rem, 3vw, 2.4rem); margin: 0 0 14px; }
+.ev-recap p { margin: 0 0 26px; color: var(--text-muted); font-size: 1.05rem; line-height: 1.75; }
+.ev-recap p a { color: #fff; text-decoration: underline; text-decoration-color: var(--red); text-underline-offset: 3px; }
+.ev-recap-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.ev-recap-link { display: block; padding: 16px 18px; border: 1px solid var(--border); background: var(--card); color: #fff; text-decoration: none; font-weight: 600; transition: border-color .2s; }
+.ev-recap-link span { display: block; margin-bottom: 4px; color: var(--red); font-size: .75rem; letter-spacing: 2px; text-transform: uppercase; }
+.ev-recap-link:hover { border-color: var(--red); }

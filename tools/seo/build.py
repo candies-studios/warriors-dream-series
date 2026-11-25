@@ -214,6 +214,49 @@ def write(rel, text):
 
 
 # --------------------------------------------------------------------- pages
+
+FINISH = ('KO_HEAD', 'KO_BODY', 'TKO', 'SUBMISSION', 'RNC', 'DOCTOR_STOPPAGE', 'CORNER_STOPPAGE')
+
+
+def event_recap(D, ev, bouts):
+    """A short written summary of a finished event plus links to the events before and after it."""
+    final = [b for b in bouts if b.get('result_status') == 'final']
+    pro = sum(1 for b in bouts if b.get('bout_type') == 'PROFESSIONAL')
+    am = len(bouts) - pro
+    finishes = sum(1 for b in final if (b.get('result_type') or '') in FINISH)
+    when = fmt_date(ev.get('event_date'), long=True)
+    place = ', '.join(p for p in [ev.get('venue'), ev.get('city')] if p)
+    kinds = ' and '.join(x for x in ['%d professional' % pro if pro else '', '%d amateur' % am if am else ''] if x)
+    text = '%s took place%s%s. The card had %d bouts (%s).' % (
+        e(ev['title']), (' on ' + when) if when else '', (' at ' + e(place)) if place else '', len(bouts), kinds)
+    if final:
+        text += ' %d of the %d decided bouts ended inside the distance by knockout, TKO or submission.' % (finishes, len(final)) \
+            if finishes else ' Every decided bout went to the judges.'
+    main = bouts[-1] if bouts else None
+
+    def link(fid, name):
+        slug = D.fighter_slug.get(fid)
+        return '<a href="../../fighters/%s/">%s</a>' % (slug, e(name)) if slug else e(name)
+    if main and main.get('result_status') == 'final' and main.get('winner_id'):
+        blue = main['winner_id'] == main['blue_fighter_id']
+        win = link(main['winner_id'], main['blue_name'] if blue else main['red_name'])
+        lose = link(main['red_fighter_id'] if blue else main['blue_fighter_id'], main['red_name'] if blue else main['blue_name'])
+        text += ' In the main event, %s beat %s by %s.' % (win, lose, e(method(main)))
+    # previous / next listed events (by date)
+    seq = [x for x in D.static_events if x.get('event_date')]
+    seq.sort(key=lambda x: x['event_date'])
+    nav = []
+    if ev in seq:
+        i = seq.index(ev)
+        if i > 0:
+            nav.append('<a class="ev-recap-link" href="../%s/"><span>‹ Previous event</span>%s</a>' % (seq[i - 1]['slug'], e(seq[i - 1]['title'])))
+        if i < len(seq) - 1:
+            nav.append('<a class="ev-recap-link" href="../%s/"><span>Next event ›</span>%s</a>' % (seq[i + 1]['slug'], e(seq[i + 1]['title'])))
+    nav.append('<a class="ev-recap-link" href="../../pages/events.html"><span>All events</span>WDS events &amp; results</a>')
+    return ('<section class="ev-recap">\n  <div class="container ev-recap-inner">\n'
+            '    <h2>%s summary</h2>\n    <p>%s</p>\n    <nav class="ev-recap-nav" aria-label="More WDS events">%s</nav>\n'
+            '  </div>\n</section>\n') % (e(ev['title']), text, ''.join(nav))
+
 def event_pages(D):
     tpl = open(os.path.join(ROOT, 'pages/event.html'), encoding='utf-8').read()
     tpl = depth_paths(tpl, 2)
@@ -273,6 +316,7 @@ def event_pages(D):
             sports_event, crumbs(('Home', '/'), ('Events', '/pages/events.html'), (ev['title'], url))])
         # visible fallback before the scripts run: the event's name as the page heading
         s = s.replace('<h1>Event</h1>', '<h1>%s</h1>' % e(ev['title']), 1)
+        s = s.replace('<footer class="site-footer">', event_recap(D, ev, bouts) + '<footer class="site-footer">', 1)
         write('events/%s/index.html' % ev['slug'], s)
         out.append((url, ev.get('event_date') or ''))
     return out
