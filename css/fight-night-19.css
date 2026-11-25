@@ -36,6 +36,20 @@
   margin: 0; color: #7b7b7b; font-size: 11px; font-weight: 800;
   letter-spacing: 2px; text-transform: uppercase;
 }
+/* Date, time and venue under the title */
+.fn19-heading p.fn19-when {
+  margin: 0 0 10px; color: #fff; font-size: 13px; letter-spacing: 1.6px; line-height: 1.6;
+}
+/* Book Now (same look as the button the tickets script adds) */
+.fn19-heading .wds-buy-tickets {
+  display: inline-flex; align-items: center; gap: 8px; margin: 18px 0 6px;
+  padding: 14px 30px; background: #d7272a; color: #fff;
+  font-family: Oswald, sans-serif; font-size: 1rem; font-weight: 600;
+  letter-spacing: 2.3px; text-transform: uppercase; text-decoration: none;
+  box-shadow: 0 10px 26px -10px rgba(215,39,42,.9); transition: background .2s, color .2s;
+}
+.fn19-heading .wds-buy-tickets:hover { background: #fff; color: #050505; }
+.fn19-heading .wds-buy-tickets svg { width: 15px; height: 15px; }
 
 /* ---- Bout card ---- */
 .fn19-fight {
@@ -154,6 +168,9 @@
   .fn19-kicker::before, .fn19-kicker::after { width: 20px; }
   .fn19-heading h1 { font-size: clamp(42px, 12vw, 68px); }
   .fn19-heading p { font-size: 8px; letter-spacing: 1.2px; line-height: 1.5; }
+  .fn19-heading p.fn19-when { font-size: 11px; letter-spacing: 1px; }
+  .fn19-heading p.fn19-when .fn19-sep { display: none; }
+  .fn19-heading p.fn19-when span:last-child { display: block; }
   .fn19-bout-header { padding: 12px 38px 8px; }
   .fn19-fight.main-event .fn19-bout-header, .fn19-fight.co-main .fn19-bout-header { min-height: 74px; padding: 14px 38px 10px; }
   .fn19-event-label, .fn19-fight.main-event .fn19-event-label, .fn19-fight.co-main .fn19-event-label { padding: 6px 11px; font-size: 9px; letter-spacing: 1.6px; }

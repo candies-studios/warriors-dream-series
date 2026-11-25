@@ -2098,3 +2098,36 @@ body.community-open { overflow: hidden; }
 @media (min-width: 861px) and (max-width: 1240px) {
   .site-nav ul { gap: 20px; }
 }
+
+/* ---------- Home: keyword line above the hero headline ---------- */
+.hero h1 .hero-eyebrow {
+  display: block;
+  margin: 0 0 14px;
+  color: #fff;
+  font-family: 'Oswald', sans-serif;
+  font-size: clamp(.78rem, 1.3vw, 1rem);
+  font-weight: 500;
+  letter-spacing: 4px;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+/* ---------- Home: About WDS text ---------- */
+.home-intro { background: var(--bg-alt); }
+.home-intro-inner { max-width: 880px; }
+.home-intro .section-head { text-align: center; margin-bottom: 28px; }
+.home-intro h3 {
+  margin: 30px 0 10px;
+  font-size: 1.5rem;
+  color: #fff;
+}
+.home-intro p {
+  margin: 0 0 16px;
+  color: var(--text-muted);
+  font-size: 1.05rem;
+  line-height: 1.75;
+}
+.home-intro strong { color: #fff; font-weight: 600; }
+.home-intro a { color: #fff; text-decoration: underline; text-decoration-color: var(--red); text-underline-offset: 3px; }
+.home-intro a:hover { color: var(--red); }
+

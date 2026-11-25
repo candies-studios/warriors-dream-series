@@ -129,7 +129,7 @@
     onsale.forEach(function (ev) {
       document.querySelectorAll('a[href]').forEach(function (a) {
         if (!pointsTo(a, ev)) return;
-        if (a.closest('.site-nav, .footer-nav, h1, h2, h3, h4')) return; // titles and menus keep their plain link
+        if (a.closest('.site-nav, .footer-nav, h1, h2, h3, h4, .home-intro')) return; // titles, menus and text links keep their plain link
         addBeside(a, ev);
       });
       var onPage = location.pathname.split('/').pop() === (ev.page_url || '').split('/').pop();
