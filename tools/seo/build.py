@@ -465,6 +465,32 @@ def mark_live_regions():
     open(p, 'w', encoding='utf-8').write(s)
 
 
+
+def events_itemlist(D):
+    """ItemList structured data on the Events page: every event page, newest first."""
+    items = []
+    for ev in sorted(D.events, key=lambda e: e.get('event_date') or '', reverse=True):
+        if not ev.get('is_listed', True):
+            continue
+        if ev in D.static_events:
+            url = SITE + '/events/%s/' % ev['slug']
+        elif ev.get('page_url'):
+            url = SITE + '/' + ev['page_url'].lstrip('/')
+        else:
+            continue
+        items.append({"@type": "ListItem", "position": len(items) + 1, "url": url, "name": ev['title']})
+    block = {"@context": "https://schema.org", "@type": "ItemList", "name": "Warriors Dream Series MMA events",
+             "itemListOrder": "https://schema.org/ItemListOrderDescending", "itemListElement": items}
+    p = os.path.join(ROOT, 'pages/events.html')
+    s = open(p, encoding='utf-8').read()
+    tag = '<script type="application/ld+json" id="wds-events-list">\n%s\n</script>\n' % json.dumps(block, ensure_ascii=False, indent=2)
+    if 'id="wds-events-list"' in s:
+        s = re.sub(r'<script type="application/ld\+json" id="wds-events-list">.*?</script>\n', lambda m: tag, s, count=1, flags=re.S)
+    else:
+        s = s.replace('</head>', tag + '</head>', 1)
+    open(p, 'w', encoding='utf-8').write(s)
+    return len(items)
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
     if not args:
@@ -479,6 +505,7 @@ def main():
     rs8_redirect()
     sitemap(ev, fi)
     mark_live_regions()
+    events_itemlist(D)
     print('events: %d, fighters: %d, old-site redirects: %s' % (len(ev), len(fi), ', '.join(old)))
     if '--no-render' not in sys.argv:
         import tempfile
