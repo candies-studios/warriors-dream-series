@@ -52,7 +52,7 @@
     var c = B.clock(b);
     var rd = b.status === 'LIVE' ? 'R' + Math.max(1, b.current_round) + ' / ' + b.total_rounds : 'Bout ' + b.bout_number;
     var cls = c.running ? (c.sec <= 30 ? 'low' : '') : 'stop';
-    return '<div class="lg"><img src="../assets/images/favicon-192x192.png" alt=""></div>' +
+    return '<div class="lg"><img src="' + LOGO + '" alt=""></div>' +
       '<div class="nm"><div class="r"><i></i>' + esc(b.red.name) + '</div><div class="b"><i></i>' + esc(b.blue.name) + '</div></div>' +
       '<div class="rd">' + esc(rd) + '</div><div class="tm ' + cls + '">' + esc(c.text || '0:00') + '</div>';
   }
