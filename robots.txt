@@ -6,6 +6,7 @@ Allow: /
 Disallow: /admin-dashboard.html
 Disallow: /supabase/
 Disallow: /tools/
+Disallow: /broadcast/
 Disallow: /README
 Disallow: /*.sql$
 Disallow: /*.patch$

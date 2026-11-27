@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<title>WDS Broadcast Overlay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=Teko:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="broadcast.css">
+</head>
+<body class="bc-overlay">
+<div class="ov ov-clock" id="ovClock"></div>
+<div class="ov ov-lower" id="ovLower"></div>
+<div class="ov ov-panel ov-score" id="ovScore"></div>
+<div class="ov ov-panel ov-result" id="ovResult"></div>
+<div class="ov ov-panel ov-next" id="ovNext"></div>
+<div class="ov ov-panel ov-card" id="ovCard"></div>
+
+<script src="../js/wds-config.js"></script>
+<script src="broadcast.js"></script>
+<script>
+/*
+ * el=auto (default)  clock while a bout is live, fighter intro when round 1 starts,
+ *                    scorecards when each round is scored, result when the bout ends, then up next
+ * el=clock | lowerthird | scores | result | upnext | card   one graphic, always on
+ * event=<slug>       pick the event (otherwise the next upcoming one)
+ * preview=1          grey background, for checking in a normal browser
+ * Durations (seconds) can be changed: intro=12 scores=15 result=30 next=15
+ */
+(function () {
+  var B = window.WDSBroadcast, esc = B.esc;
+  var q = new URLSearchParams(location.search);
+  var EL = (q.get('el') || 'auto').toLowerCase();
+  if (q.get('preview') === '1') document.body.classList.add('preview');
+  var DUR = { intro: +q.get('intro') || 12, scores: +q.get('scores') || 15, result: +q.get('result') || 30, next: +q.get('next') || 15 };
+  var PH = '../assets/images/fight-night-19/placeholder-fighter.svg';
+  var LOGO = '../assets/images/logo.png';
+  var $ = function (id) { return document.getElementById(id); };
+  var cache = {};
+  function put(id, html) { if (cache[id] !== html) { $(id).innerHTML = html; cache[id] = html; } }
+  function show(id, on) { $(id).classList.toggle('show', !!on); }
+  function img(u) { return esc(u || PH) + '" onerror="this.onerror=null;this.src=\'' + PH + '\''; }
+  function flag(c) { var u = B.flagUrl(c); return u ? '<img src="' + u + '" alt="">' : ''; }
+  function meta(f) {
+    return flag(f.country) + (f.country ? '<span>' + esc(f.country) + '</span>' : '') +
+      (f.declared_record ? '<span>' + esc(f.declared_record) + '</span>' : '');
+  }
+
+  // ------------------------------------------------------------ graphics
+  function clockHtml(b) {
+    var c = B.clock(b);
+    var rd = b.status === 'LIVE' ? 'R' + Math.max(1, b.current_round) + ' / ' + b.total_rounds : 'Bout ' + b.bout_number;
+    var cls = c.running ? (c.sec <= 30 ? 'low' : '') : 'stop';
+    return '<div class="lg"><img src="../assets/images/favicon-192x192.png" alt=""></div>' +
+      '<div class="nm"><div class="r"><i></i>' + esc(b.red.name) + '</div><div class="b"><i></i>' + esc(b.blue.name) + '</div></div>' +
+      '<div class="rd">' + esc(rd) + '</div><div class="tm ' + cls + '">' + esc(c.text || '0:00') + '</div>';
+  }
+  function lowerHtml(b) {
+    var L = B.boutLabels(b);
+    function side(f, s) {
+      return '<div class="side ' + s + '"><div class="bar"></div><img class="ph" src="' + img(f.photo) + '" alt="">' +
+        '<div class="tx"><div class="nick">' + (f.nickname ? '“' + esc(f.nickname) + '”' : '') + '</div>' +
+        '<div class="nm">' + esc(f.name || 'TBA') + '</div><div class="mt">' + meta(f) + '</div></div></div>';
+    }
+    return side(b.red, 'red') +
+      '<div class="ctr">' + (L.tag ? '<div class="t">' + esc(L.tag) + '</div>' : '<div class="t">Bout ' + esc(L.number) + '</div>') +
+      '<div class="vs">VS</div><div class="w">' + esc(L.weight) + '<br>' + esc(b.total_rounds) + ' × ' + Math.round(b.round_duration / 60) + ' min</div></div>' +
+      side(b.blue, 'blue');
+  }
+  function head(title, sub) {
+    return '<div class="hd"><div><div class="tt">' + esc(title) + '</div>' + (sub ? '<div class="sub">' + esc(sub) + '</div>' : '') +
+      '</div><img src="' + LOGO + '" alt=""></div>';
+  }
+  function scoresHtml(b) {
+    var sc = B.scorecard(b);
+    if (!sc.judges.length) return '';
+    var n = Math.max(1, sc.rounds);
+    var final = b.status === 'COMPLETED';
+    var th = '<tr><th></th>';
+    for (var i = 1; i <= n; i++) th += '<th>Round ' + i + '</th>';
+    th += '<th>Total</th></tr>';
+    var rows = sc.judges.map(function (j) {
+      var tr = '<tr><td class="j">' + esc(j.name) + '</td>';
+      for (var i = 1; i <= n; i++) {
+        var s = j.rounds[i];
+        tr += '<td>' + (s ? '<span class="r">' + s.red_score + '</span> – <span class="b">' + s.blue_score + '</span>' : '–') + '</td>';
+      }
+      return tr + '<td class="tot"><span class="r">' + j.red + '</span> – <span class="b">' + j.blue + '</span></td></tr>';
+    }).join('');
+    return head(final ? 'Official scorecards' : 'Scorecards after round ' + n, B.boutLabels(b).weight) +
+      '<div class="fn"><div class="r">' + esc(b.red.name) + '</div><div class="b">' + esc(b.blue.name) + '</div></div>' +
+      '<table><thead>' + th + '</thead><tbody>' + rows + '</tbody></table>';
+  }
+  function resultHtml(b) {
+    if (!b || b.status !== 'COMPLETED' || !b.result_type) return '';
+    var ws = B.winnerSide(b), w = ws === 'red' ? b.red : ws === 'blue' ? b.blue : null, l = ws === 'red' ? b.blue : b.red;
+    var prov = b.result_status !== 'final' ? '<div class="prov">Official result pending confirmation</div>' : '';
+    if (!w) {
+      $('ovResult').classList.add('draw');
+      return head('Result', B.boutLabels(b).weight) + '<div class="body"><div class="tx">' +
+        '<div class="nm" style="font-size:64px">' + esc(B.methodLabel(b.result_type)) + '</div>' +
+        '<div class="df">' + esc(b.red.name) + ' vs ' + esc(b.blue.name) + '</div>' + judgesLine(b, null) + prov + '</div></div>';
+    }
+    $('ovResult').classList.remove('draw');
+    var how = B.resultLine(b);
+    return '<div class="body"><img src="' + img(w.photo) + '" alt=""><div class="tx">' +
+      '<span class="lbl">Winner</span><div class="nm">' + esc(w.name) + '</div>' +
+      '<div class="nk">' + (w.nickname ? '“' + esc(w.nickname) + '”' : '') + '</div>' +
+      '<div class="md">' + esc(how) + '</div>' +
+      '<div class="df">defeats ' + esc(l.name) + '</div>' + judgesLine(b, ws) + prov + '</div></div>';
+  }
+  function judgesLine(b, ws) {
+    if (!B.isDecision(b.result_type)) return '';
+    var sc = B.scorecard(b);
+    if (!sc.judges.length) return '';
+    return '<div class="sc">' + sc.judges.map(function (j) {
+      return ws === 'blue' ? j.blue + '–' + j.red : j.red + '–' + j.blue;
+    }).join('  ·  ') + '</div>';
+  }
+  function nextHtml(b) {
+    if (!b) return '';
+    var L = B.boutLabels(b);
+    function f(x, s) {
+      return '<div class="f ' + s + '"><img class="ph" src="' + img(x.photo) + '" alt=""><div>' +
+        '<div class="nk">' + (x.nickname ? '“' + esc(x.nickname) + '”' : '') + '</div><div class="nm">' + esc(x.name || 'TBA') + '</div>' +
+        '<div class="mt">' + meta(x) + '</div></div></div>';
+    }
+    return head(L.tag ? 'Up next · ' + L.tag : 'Up next', 'Bout ' + L.number + ' · ' + L.weight) +
+      '<div class="vsrow">' + f(b.red, 'r') + '<div class="vs">VS</div>' + f(b.blue, 'b') + '</div>';
+  }
+  function cardHtml() {
+    var list = B.all();
+    if (!list.length) return '';
+    var ev = B.S.event;
+    $('ovCard').classList.toggle('compact', list.length > 11);
+    return head(ev ? ev.title : 'Fight card', 'Fight card') + '<div class="rows">' + list.slice().reverse().map(function (b) {
+      var ws = B.winnerSide(b);
+      var right = b.status === 'COMPLETED' ? B.methodLabel(b.result_type) : b.status === 'LIVE' ? 'Live now' : B.boutLabels(b).weight;
+      return '<div class="row' + (b.status === 'LIVE' ? ' live' : '') + '"><span class="n">' + b.bout_number + '</span>' +
+        '<span class="rn' + (ws === 'red' ? ' win' : '') + '">' + esc(b.red.name) + '</span><span class="vs">vs</span>' +
+        '<span class="' + (ws === 'blue' ? 'win' : '') + '">' + esc(b.blue.name) + '</span><span class="w">' + esc(right) + '</span></div>';
+    }).join('') + '</div>';
+  }
+
+  // ------------------------------------------------------------ fixed graphic
+  function renderFixed() {
+    var b = B.current();
+    if (EL === 'clock') { if (b && b.status !== 'COMPLETED') put('ovClock', clockHtml(b)); show('ovClock', b && b.status !== 'COMPLETED'); }
+    if (EL === 'lowerthird') { if (b) put('ovLower', lowerHtml(b)); show('ovLower', !!b); }
+    if (EL === 'scores') {
+      var sb = b && B.scorecard(b).judges.length ? b : B.lastResult();
+      var h = sb ? scoresHtml(sb) : ''; if (h) put('ovScore', h); show('ovScore', !!h);
+    }
+    if (EL === 'result') {
+      var rb = b && b.status === 'COMPLETED' ? b : B.lastResult();
+      var r = resultHtml(rb); if (r) put('ovResult', r); show('ovResult', !!r);
+    }
+    if (EL === 'upnext') {
+      var nb = B.next(); var n = nextHtml(nb); if (n) put('ovNext', n); show('ovNext', !!n);
+    }
+    if (EL === 'card') { var c = cardHtml(); if (c) put('ovCard', c); show('ovCard', !!c); }
+  }
+
+  // ------------------------------------------------------------ automatic
+  // Watches the live bout and queues graphics when something changes.
+  // The first poll only records where things stand, so reopening OBS doesn't replay old graphics.
+  var seen = null, queue = [], active = null, until = 0, lowerUntil = 0;
+  function snap(b) { return b ? { id: b.id, status: b.status, round: b.current_round, running: !!b.round_started_at } : null; }
+  function enqueue(kind, boutId, secs) { queue.push({ kind: kind, id: boutId, secs: secs }); }
+  function detect() {
+    if (!B.S.lastOk || !B.all().length) return;
+    if (seen === null) { seen = { byId: {} }; B.all().forEach(function (x) { var c = snap(x); c.introDone = x.status !== 'SCHEDULED'; seen.byId[x.id] = c; }); return; }
+    B.all().forEach(function (x) {
+      var p = seen.byId[x.id], c = snap(x);
+      seen.byId[x.id] = c;
+      if (!p) return;
+      // round 1 begins -> fighter intro
+      if (c.status === 'LIVE' && c.running && c.round === 1 && !(p.status === 'LIVE' && p.round === 1 && p.running) && !p.introDone) {
+        c.introDone = true; lowerUntil = Date.now() + DUR.intro * 1000; lowerBout = x.id;
+      } else if (p.introDone) c.introDone = true;
+      // a round was scored (ScoreHUB moves to the next round once all judges submit)
+      if (c.status === 'LIVE' && p.status === 'LIVE' && c.round > p.round) enqueue('scores', x.id, DUR.scores);
+      // bout finished
+      if (c.status === 'COMPLETED' && p.status !== 'COMPLETED') {
+        if (B.isDecision(x.result_type)) enqueue('scores', x.id, DUR.scores);
+        enqueue('result', x.id, DUR.result);
+        enqueue('next', null, DUR.next);
+      }
+    });
+  }
+  var lowerBout = null;
+  function byId(id) { return B.all().find(function (x) { return x.id === id; }) || null; }
+  function renderAuto() {
+    detect();
+    var t = Date.now();
+    if (active && t > until) active = null;
+    if (!active && queue.length) { active = queue.shift(); until = t + active.secs * 1000; }
+    var panel = '', html = '';
+    if (active) {
+      var ab = active.id ? byId(active.id) : null;
+      if (active.kind === 'scores' && ab) { html = scoresHtml(ab); panel = 'ovScore'; }
+      if (active.kind === 'result' && ab) { html = resultHtml(ab); panel = 'ovResult'; }
+      if (active.kind === 'next') { html = nextHtml(B.next()); panel = 'ovNext'; }
+      if (!html) { active = null; until = 0; }
+    }
+    ['ovScore', 'ovResult', 'ovNext'].forEach(function (id) { if (id === panel) put(id, html); show(id, id === panel); });
+    var b = B.current();
+    var lowerOn = t < lowerUntil && lowerBout && !panel;
+    if (lowerOn) put('ovLower', lowerHtml(byId(lowerBout)));
+    show('ovLower', lowerOn);
+    var clockOn = b && b.status === 'LIVE' && !panel;
+    if (clockOn) put('ovClock', clockHtml(b));
+    show('ovClock', clockOn);
+  }
+
+  B.on(EL === 'auto' ? renderAuto : renderFixed);
+  B.start({ event: q.get('event') });
+
+  // Keyboard shortcuts when the overlay window has focus (vMix / OBS "Interact"):
+  // 1 intro · 2 scores · 3 result · 4 up next · 0 clear
+  document.addEventListener('keydown', function (e) {
+    if (EL !== 'auto') return;
+    var b = B.current();
+    if (e.key === '0') { queue = []; active = null; lowerUntil = 0; }
+    if (e.key === '1' && b) { lowerUntil = Date.now() + DUR.intro * 1000; lowerBout = b.id; }
+    if (e.key === '2' && b) { queue = []; active = { kind: 'scores', id: (B.scorecard(b).judges.length ? b : B.lastResult() || b).id, secs: DUR.scores }; until = Date.now() + DUR.scores * 1000; }
+    if (e.key === '3') { var r = b && b.status === 'COMPLETED' ? b : B.lastResult(); if (r) { queue = []; active = { kind: 'result', id: r.id, secs: DUR.result }; until = Date.now() + DUR.result * 1000; } }
+    if (e.key === '4') { queue = []; active = { kind: 'next', id: null, secs: DUR.next }; until = Date.now() + DUR.next * 1000; }
+  });
+})();
+</script>
+</body>
+</html>

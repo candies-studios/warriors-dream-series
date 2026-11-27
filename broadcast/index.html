@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>WDS Broadcast — Live Scoreboard</title>
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/images/favicon-32x32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=Teko:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="broadcast.css">
+</head>
+<body class="bc-display">
+
+<header class="bc-top">
+  <img class="logo" src="../assets/images/logo.png" alt="WDS">
+  <div class="ev"><b id="evTitle">Connecting…</b><span id="evSub"></span></div>
+  <span class="bc-conn" id="conn"><i></i><span>Live</span></span>
+  <div class="tools" style="display:flex;gap:8px;align-items:center">
+    <select class="bc-btn" id="evPick" title="Event"></select>
+    <button class="bc-btn on" id="autoBtn" title="Follow the live bout automatically">Auto</button>
+    <button class="bc-btn" id="linksBtn">Overlay links</button>
+    <button class="bc-btn" id="fsBtn" title="Full screen (F)">Full screen</button>
+  </div>
+</header>
+
+<main class="bc-main">
+  <section class="bc-stage">
+    <div class="bc-bouttag" id="boutTag"></div>
+    <div class="bc-face">
+      <article class="bc-fighter red" id="fRed"></article>
+      <div class="bc-mid" id="mid"></div>
+      <article class="bc-fighter blue" id="fBlue"></article>
+    </div>
+    <div class="bc-result" id="result" hidden></div>
+    <div class="bc-cards">
+      <h3>Judges' scorecards</h3>
+      <div id="cards"></div>
+    </div>
+  </section>
+
+  <aside class="bc-side">
+    <h3><span>Fight card</span><span class="bc-pinned" id="pinNote"></span></h3>
+    <div id="card"></div>
+  </aside>
+</main>
+
+<div class="bc-modal" id="links" hidden>
+  <div class="box">
+    <h2>Overlay links for OBS / vMix</h2>
+    <p>Add each link as a <b>Browser Source</b> in OBS, or a <b>Web Browser</b> input in vMix, at <b>1920 × 1080</b>.
+       The background is transparent. "Automatic" shows the right graphic at the right moment; the others are for
+       an operator who wants to switch graphics by hand.</p>
+    <div id="linkList"></div>
+    <p style="margin-top:14px">Add <code>&amp;preview=1</code> to any link to see it on a grey background in a normal browser.</p>
+    <button class="bc-btn" id="linksClose">Close</button>
+  </div>
+</div>
+<div class="bc-err" id="err" hidden></div>
+
+<script src="../js/wds-config.js"></script>
+<script src="broadcast.js"></script>
+<script>
+(function () {
+  var B = window.WDSBroadcast, esc = B.esc;
+  var params = new URLSearchParams(location.search);
+  if (params.get('kiosk') === '1') document.body.classList.add('kiosk');
+  var PH = '../assets/images/fight-night-19/placeholder-fighter.svg';
+  var $ = function (id) { return document.getElementById(id); };
+  var lastCardHtml = '', lastEvOpts = '';
+
+  function fighterHtml(f, side, b) {
+    var flag = B.flagUrl(f.country);
+    var ws = B.winnerSide(b);
+    var meta = [];
+    if (f.country) meta.push((flag ? '<img class="flag" src="' + flag + '" alt="">' : '') + '<span>' + esc(f.country) + '</span>');
+    if (f.declared_record) meta.push('<span>Record <b>' + esc(f.declared_record) + '</b></span>');
+    if (f.height) meta.push('<span>Ht <b>' + esc(f.height) + '</b></span>');
+    return '<div class="ph"><img src="' + esc(f.photo || PH) + '" alt="" onerror="this.onerror=null;this.src=\'' + PH + '\'">' +
+      '<span class="corner">' + (side === 'red' ? 'Red corner' : 'Blue corner') + '</span><span class="winflag">Winner</span></div>' +
+      '<div class="info"><div class="nick">' + (f.nickname ? '“' + esc(f.nickname) + '”' : '') + '</div>' +
+      '<div class="nm">' + esc(f.name || 'TBA') + '</div><div class="meta">' + meta.join('') + '</div></div>';
+  }
+
+  function render(S) {
+    var ev = S.event;
+    // header
+    $('evTitle').textContent = ev ? ev.title : (S.error ? 'Cannot reach ScoreHUB' : 'Connecting…');
+    $('evSub').textContent = ev ? [B.fmtDate(ev.event_date), ev.venue, ev.city].filter(Boolean).join(' · ') : '';
+    var stale = !S.lastOk || Date.now() - S.lastOk > 8000;
+    $('conn').className = 'bc-conn' + (stale ? ' bad' : '');
+    $('conn').lastChild.textContent = stale ? 'Reconnecting' : 'Live';
+    $('err').hidden = !S.error; $('err').textContent = S.error ? 'Connection problem: ' + S.error + ' — retrying…' : '';
+    var opts = S.events.map(function (e) { return '<option value="' + esc(e.slug) + '">' + esc(e.title) + '</option>'; }).join('');
+    if (opts !== lastEvOpts) { $('evPick').innerHTML = opts; lastEvOpts = opts; }
+    if (ev) $('evPick').value = ev.slug;
+    $('autoBtn').className = 'bc-btn' + (S.pinned ? '' : ' on');
+    $('pinNote').textContent = S.pinned ? 'Pinned · press Auto to follow live' : '';
+
+    var b = B.current();
+    if (!b) {
+      $('boutTag').innerHTML = '<div class="wc">' + (ev ? 'No bouts on the card yet' : '') + '</div>';
+      $('fRed').innerHTML = $('fBlue').innerHTML = $('mid').innerHTML = $('cards').innerHTML = '';
+      $('result').hidden = true; renderCard(null); return;
+    }
+    var L = B.boutLabels(b);
+    $('boutTag').innerHTML = (L.tag ? '<div class="tag">' + esc(L.tag) + '</div>' : '') +
+      '<div class="wc">' + esc(L.weight) + '</div><div class="num">Bout ' + esc(L.number) + ' · ' + esc(b.total_rounds) + ' rounds' +
+      (b.discipline && b.discipline !== 'MMA' ? ' · ' + esc(b.discipline) : '') + '</div>';
+
+    var ws = B.winnerSide(b);
+    // Corners as ScoreHUB records them: red on the left, blue on the right.
+    $('fRed').className = 'bc-fighter red' + (ws === 'red' ? ' win' : ws ? ' lose' : '');
+    $('fBlue').className = 'bc-fighter blue' + (ws === 'blue' ? ' win' : ws ? ' lose' : '');
+    setHtml('fRed', fighterHtml(b.red, 'red', b));
+    setHtml('fBlue', fighterHtml(b.blue, 'blue', b));
+
+    // centre: clock + round
+    var c = B.clock(b);
+    var dots = '';
+    var scored = B.roundsScored(b);
+    for (var r = 1; r <= b.total_rounds; r++) {
+      dots += '<i class="' + (r <= scored ? 'done' : (b.status === 'LIVE' && r === b.current_round ? 'now' : '')) + '"></i>';
+    }
+    var mid = '';
+    if (b.status === 'LIVE') mid += '<span class="bc-live"><i></i>Live</span>';
+    if (b.status === 'COMPLETED') mid += '<div class="bc-vs">FINAL</div>';
+    else {
+      mid += '<div class="bc-clock ' + (c.running ? (c.sec <= 30 ? 'run low' : 'run') : 'stop') + '">' + esc(c.text) + '</div>';
+    }
+    if (b.status !== 'COMPLETED') mid += '<div class="bc-round">' + esc(c.label) + '</div>';
+    mid += '<div class="bc-dots">' + dots + '</div>';
+    setHtml('mid', mid);
+
+    // result
+    if (b.status === 'COMPLETED' && b.result_type) {
+      var wf = ws === 'red' ? b.red : ws === 'blue' ? b.blue : null;
+      var html = wf ? '<div class="w"><em>' + esc(wf.name) + '</em> wins</div>' : '<div class="w">' + esc(B.methodLabel(b.result_type)) + '</div>';
+      html += '<div class="m">' + esc(wf ? B.resultLine(b) : (b.end_round && !B.isDecision(b.result_type) ? 'Round ' + b.end_round : '')) + '</div>';
+      if (b.result_status !== 'final') html += '<div class="prov">Official result pending confirmation</div>';
+      setHtml('result', html); $('result').hidden = false;
+    } else $('result').hidden = true;
+
+    // scorecards
+    var sc = B.scorecard(b);
+    if (!sc.judges.length) {
+      setHtml('cards', '<div class="bc-empty">' + (b.status === 'SCHEDULED' ? 'Scores appear here after each round.' :
+        b.status === 'LIVE' ? 'Waiting for the judges to submit round ' + Math.max(1, b.current_round) + '…' :
+        'No judges\' scores for this bout' + (B.isDecision(b.result_type) ? '.' : ' (finished inside the distance).')) + '</div>');
+    } else {
+      var rounds = Math.max(sc.rounds, 1);
+      var th = '<tr><th>Judge</th>';
+      for (var i = 1; i <= rounds; i++) th += '<th>R' + i + '</th>';
+      th += '<th>Total</th></tr>';
+      var rows = sc.judges.map(function (j) {
+        var tr = '<tr><td class="j">' + esc(j.name) + '</td>';
+        for (var i = 1; i <= rounds; i++) {
+          var s = j.rounds[i];
+          tr += s ? '<td><span class="r">' + s.red_score + '</span>–<span class="b">' + s.blue_score + '</span></td>' : '<td class="pend">—</td>';
+        }
+        return tr + '<td class="tot"><span class="r">' + j.red + '</span>–<span class="b">' + j.blue + '</span></td></tr>';
+      }).join('');
+      setHtml('cards', '<table class="bc-table"><thead>' + th + '</thead><tbody>' + rows + '</tbody></table>' +
+        '<div class="bc-empty" style="margin-top:8px;font-size:13px;letter-spacing:.1em;text-transform:uppercase">' +
+        '<span class="r" style="color:#ff6b6f">' + esc(b.red.name) + '</span> – <span style="color:#79a6ff">' + esc(b.blue.name) + '</span></div>');
+    }
+    renderCard(b);
+  }
+
+  var cache = {};
+  function setHtml(id, html) { if (cache[id] !== html) { $(id).innerHTML = html; cache[id] = html; } }
+
+  function renderCard(cur) {
+    var html = B.all().map(function (b) {
+      var ws = B.winnerSide(b);
+      var st = b.status === 'LIVE' ? 'Live' + (b.current_round ? ' R' + b.current_round : '') :
+               b.status === 'COMPLETED' ? (B.methodLabel(b.result_type).replace(/ decision$/i, ' dec.').replace(/^TKO \(.*\)$/, 'TKO') || 'Done') :
+               b.status === 'CANCELLED' ? 'Off' : 'Next';
+      if (b.status === 'SCHEDULED' && B.next() && B.next().id !== b.id) st = 'Bout ' + b.bout_number;
+      return '<div class="bc-bout' + (cur && cur.id === b.id ? ' cur' : '') + '" data-id="' + b.id + '">' +
+        '<span class="n">' + b.bout_number + '</span><div class="names">' +
+        '<div class="' + (ws === 'red' ? 'wn' : '') + '">' + esc(b.red.name) + '</div>' +
+        '<div class="' + (ws === 'blue' ? 'wn' : '') + '">' + esc(b.blue.name) + '</div>' +
+        '<small>' + esc(B.boutLabels(b).weight) + '</small></div><span class="st ' + b.status + '">' + esc(st) + '</span></div>';
+    }).join('');
+    if (html !== lastCardHtml) { $('card').innerHTML = html; lastCardHtml = html; }
+  }
+
+  // controls
+  $('card').addEventListener('click', function (e) {
+    var row = e.target.closest('.bc-bout'); if (!row || document.body.classList.contains('kiosk')) return;
+    B.pin(B.S.pinned === row.dataset.id ? null : row.dataset.id);
+  });
+  $('autoBtn').onclick = function () { B.pin(null); };
+  $('evPick').onchange = function () {
+    var u = new URL(location.href); u.searchParams.set('event', this.value); history.replaceState(null, '', u);
+    B.setEvent(this.value);
+  };
+  function fs() {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen().catch(function () {});
+  }
+  $('fsBtn').onclick = fs;
+  document.addEventListener('keydown', function (e) {
+    if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
+    if (e.key === 'f' || e.key === 'F') fs();
+    if (e.key === 'a' || e.key === 'A') B.pin(null);
+    if (e.key === 'Escape') $('links').hidden = true;
+  });
+
+  var LINKS = [
+    ['auto', 'Automatic', 'Clock during rounds, fighter intro, scorecards after each round, result, up next'],
+    ['clock', 'Round clock', 'Small bug in the top-left corner'],
+    ['lowerthird', 'Fighter intro', 'Lower-third with both fighters'],
+    ['scores', 'Scorecards', 'Judges’ scores so far'],
+    ['result', 'Result', 'Winner and method'],
+    ['upnext', 'Up next', 'The next bout'],
+    ['card', 'Full fight card', 'Every bout with results']
+  ];
+  $('linksBtn').onclick = function () {
+    var base = new URL('overlay.html', location.href);
+    var slug = B.S.event ? B.S.event.slug : '';
+    $('linkList').innerHTML = LINKS.map(function (l) {
+      var u = new URL(base); u.searchParams.set('el', l[0]); if (slug) u.searchParams.set('event', slug);
+      return '<div class="bc-link"><b>' + l[1] + '<small>' + l[2] + '</small></b><code>' + esc(u.href) + '</code>' +
+        '<button class="bc-btn" data-u="' + esc(u.href) + '">Copy</button></div>';
+    }).join('');
+    $('links').hidden = false;
+  };
+  $('linkList').addEventListener('click', function (e) {
+    var u = e.target.getAttribute('data-u'); if (!u) return;
+    (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(function () {
+      e.target.textContent = 'Copied'; setTimeout(function () { e.target.textContent = 'Copy'; }, 1500);
+    }, function () { window.prompt('Copy this link', u); });
+  });
+  $('linksClose').onclick = function () { $('links').hidden = true; };
+
+  B.on(render);
+  B.start({ event: params.get('event') });
+})();
+</script>
+</body>
+</html>
